@@ -352,11 +352,34 @@ if ($page === 'payment-success' || $page === 'payment-failed') {
     $loggedIn = true;
 }
 
+// Admin domain switching
+if (isset($_GET['switch_domain']) && isset($_SESSION['is_superuser']) && $_SESSION['is_superuser'] === 1) {
+    $switchDomainId = (int)$_GET['switch_domain'];
+    $conn = getDbConnection();
+    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
+    $stmt->bind_param("i", $switchDomainId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $switchUser = $result->fetch_assoc();
+    $stmt->close();
+    $conn->close();
+    if ($switchUser) {
+        $_SESSION['admin_original_user'] = $_SESSION['cpanel_username'];
+        $_SESSION['admin_original_domain'] = $_SESSION['cpanel_domain'];
+        $_SESSION['admin_original_token'] = $_SESSION['cpanel_api_token'];
+        $_SESSION['cpanel_username'] = $switchUser['cpanel_username'];
+        $_SESSION['cpanel_domain'] = $switchUser['domain'];
+        $_SESSION['cpanel_api_token'] = $switchUser['api_token'];
+        header('Location: index.php');
+        exit;
+    }
+}
+
 // -------------------- AUTH HANDLERS --------------------
 // Logout
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     session_destroy();
-    header('Location: dashboard.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -379,7 +402,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'login') {
                 $_SESSION['cpanel_domain']    = $domain;
                 $_SESSION['cpanel_api_token'] = $userFromDb['api_token'];
                 $_SESSION['is_superuser']     = (int)($userFromDb['is_superuser'] ?? 0);
-                header('Location: dashboard.php');
+                header('Location: index.php');
                 exit;
             } catch (Exception $e) {
                 // fall through to create a new token
@@ -397,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'login') {
             // Persist for next time
             updateUserProfile($username, $domain, $userFromDb['full_name'] ?? null, $userFromDb['profile_picture_url'] ?? null, $apiToken);
 
-            header('Location: dashboard.php');
+            header('Location: index.php');
             exit;
         } catch (Exception $e) {
             $error = "Login failed. " . h($e->getMessage());
@@ -432,7 +455,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
             try {
                 $quota = uapi_call($cpanelDomain, $cpanelUser, $cpanelApiToken, 'Quota', 'get_quota_info');
                 $diskUsed = $quota['data']['megabytes_used'] ?? null;
-                $cPanelData['diskUsage'] = $diskUsed ? round($diskUsed, 2) : null;
+                $cPanelData['diskUsage'] = $diskUsed ? round($diskUsed / 1024, 2) : null;
             } catch (Exception $e) {
                 $cPanelData['diskUsage'] = null;
             }
@@ -703,7 +726,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                         $error = "Failed to delete quote.";
                     }
                 }
-                header("Location: dashboard.php?page=admin&sub={$subPage}");
+                header("Location: index.php?page=admin&sub={$subPage}");
                 exit;
             }
 
@@ -718,7 +741,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
         } else {
             // Non-superuser trying /admin or unknown page while logged in
             if ($page === 'admin') {
-                header("Location: dashboard.php");
+                header("Location: index.php");
                 exit;
             }
         }
@@ -874,6 +897,32 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                     <img src="https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg" alt="Drift Nimbus" style="width: 100%; max-width: 180px;">
                 </a>
             </div>
+            <?php if ($isSuperuser): ?>
+                <div style="padding: 0 1.5rem 1rem;">
+                    <label class="form-label text-white" style="font-size: 0.85rem; margin-bottom: 0.5rem;">Switch Account</label>
+                    <select class="form-select form-select-sm" id="adminDomainSwitch" style="background: #2a2a2a; color: #ffffff; border: 1px solid #3a3a3a;">
+                        <option value="">Select domain...</option>
+                        <?php
+                        $conn = getDbConnection();
+                        $allUsers = $conn->query("SELECT id, cpanel_username, domain FROM users ORDER BY domain ASC");
+                        while ($user = $allUsers->fetch_assoc()) {
+                            $selected = ($user['domain'] === $cpanelDomain && $user['cpanel_username'] === $cpanelUser) ? 'selected' : '';
+                            echo '<option value="' . h($user['id']) . '" ' . $selected . '>' . h($user['domain']) . ' (' . h($user['cpanel_username']) . ')</option>';
+                        }
+                        $conn->close();
+                        ?>
+                    </select>
+                </div>
+            <?php endif; ?>
+            <div class="sidebar-user" style="border-bottom: 1px solid #2d2d2d; padding-bottom: 1rem; margin-bottom: 1rem;">
+                <a href="?page=settings" class="sidebar-user-info">
+                    <img src="<?php echo h($userProfile['profile_picture_url'] ?? 'https://placehold.co/40x40/64748b/e2e8f0?text=PFP'); ?>" class="rounded-circle" width="36" height="36" alt="Profile">
+                    <div>
+                        <div style="font-size: 0.9rem; color: #ffffff;"><?php echo h($userProfile['full_name'] ?? $cpanelUser); ?></div>
+                        <div style="font-size: 0.75rem; color: #707070;"><?php echo h($cpanelDomain); ?></div>
+                    </div>
+                </a>
+            </div>
             <ul class="sidebar-nav">
                 <li class="sidebar-nav-item">
                     <a href="?page=dashboard" class="sidebar-nav-link <?php echo $page === 'dashboard' ? 'active' : ''; ?>">
@@ -930,10 +979,13 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                         </ul>
                     </li>
                 <?php endif; ?>
+                <li class="sidebar-nav-item">
+                    <a href="?action=logout" class="sidebar-nav-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Log Off</span>
+                    </a>
+                </li>
             </ul>
-            <div class="sidebar-user">
-
-            </div>
         </aside>
 
         <div class="main-content">
@@ -961,7 +1013,8 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                             <div class="card wide p-4" style="background-image: url('https://dashboard.driftnimbus.com/assets/images/main.jpg'); background-size: cover; background-position: center;">
                                 <div class="card-body">
                                     <h1 class="text-white fw-bold mb-2">Welcome, <br><?php echo h($cPanelData['welcomeName']); ?></h1>
-
+                                    <p class="text-white mb-1">Server Status: <span style="color: #28a745; font-weight: bold;">Online</span></p>
+                                    <p class="text-white mb-0">Active Package: <?php echo h($userProfile['package'] ?? 'N/A'); ?></p>
                                 </div>
                             </div>
                             <!-- Time Widget -->
@@ -973,77 +1026,85 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                 </div>
                             </div>
                             <!-- Weather Widget -->
+                            <?php
+                            $weather_code = $cPanelData['weather']['weather_code'] ?? null;
+                            $temperature = $cPanelData['weather']['temperature_2m'] ?? 'N/A';
+                            $weather_description = 'N/A';
+                            $weather_icon = '';
+                            $weather_bg = 'assets/images/weather/cloudy.jpg';
+
+                            switch ($weather_code) {
+                                case 0:
+                                    $weather_description = 'Sunny';
+                                    $weather_icon = 'assets/images/weather/sunny.png';
+                                    $weather_bg = 'assets/images/weather/sunny.jpg';
+                                    break;
+                                case 1:
+                                case 2:
+                                    $weather_description = 'Partially Cloudy';
+                                    $weather_icon = 'assets/images/weather/partially-cloudy.png';
+                                    $weather_bg = 'assets/images/weather/cloudy.jpg';
+                                    break;
+                                case 3:
+                                    $weather_description = 'Cloudy';
+                                    $weather_icon = 'assets/images/weather/partial-clouds.png';
+                                    $weather_bg = 'assets/images/weather/cloudy.jpg';
+                                    break;
+                                case 45:
+                                case 48:
+                                    $weather_description = 'Fog';
+                                    $weather_icon = 'assets/images/weather/partial-clouds.png';
+                                    $weather_bg = 'assets/images/weather/cloudy.jpg';
+                                    break;
+                                case 51:
+                                case 53:
+                                case 55:
+                                    $weather_description = 'Light Showers';
+                                    $weather_icon = 'assets/images/weather/light-showers.png';
+                                    $weather_bg = 'assets/images/weather/rainy.jpg';
+                                    break;
+                                case 61:
+                                case 63:
+                                case 65:
+                                case 80:
+                                case 81:
+                                case 82:
+                                    $weather_description = 'Rainy';
+                                    $weather_icon = 'assets/images/weather/rain.png';
+                                    $weather_bg = 'assets/images/weather/rainy.jpg';
+                                    break;
+                                case 56:
+                                case 57:
+                                case 66:
+                                case 67:
+                                    $weather_description = 'Freezing Rain';
+                                    $weather_icon = 'assets/images/weather/rain.png';
+                                    $weather_bg = 'assets/images/weather/rainy.jpg';
+                                    break;
+                                case 71:
+                                case 73:
+                                case 75:
+                                case 77:
+                                case 85:
+                                case 86:
+                                    $weather_description = 'Snow';
+                                    $weather_icon = 'assets/images/weather/light-showers.png';
+                                    $weather_bg = 'assets/images/weather/cloudy.jpg';
+                                    break;
+                                case 95:
+                                case 96:
+                                case 99:
+                                    $weather_description = 'Thunderstorm';
+                                    $weather_icon = 'assets/images/weather/thunderstorms.png';
+                                    $weather_bg = 'assets/images/weather/thunderstorm.jpg';
+                                    break;
+                            }
+                            ?>
                             <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image: url('<?php echo h($weather_bg); ?>'); background-size: cover; background-position: center;">
                                 <div class="card-body w-100">
                                     <h5 class="card-title text-highlight text-white">Weather</h5>
-                                    <?php
-                                    $weather_code = $cPanelData['weather']['weather_code'] ?? null;
-                                    $temperature = $cPanelData['weather']['temperature_2m'] ?? 'N/A';
-                                    $weather_description = 'N/A';
-                                    $weather_icon = '';
-                                    $weather_bg = '';
-
-                                    switch ($weather_code) {
-                                        case 0:
-                                            $weather_description = 'Clear sky';
-                                            $weather_icon = 'fa-sun';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/sunny.jpg';
-                                            break;
-                                        case 1:
-                                        case 2:
-                                        case 3:
-                                            $weather_description = 'Mainly clear, partly cloudy, and overcast';
-                                            $weather_icon = 'fa-cloud-sun';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/cloudy.jpg';
-                                            break;
-                                        case 45:
-                                        case 48:
-                                            $weather_description = 'Fog and depositing rime fog';
-                                            $weather_icon = 'fa-smog';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/cloudy.jpg';
-                                            break;
-                                        case 51:
-                                        case 53:
-                                        case 55:
-                                        case 61:
-                                        case 63:
-                                        case 65:
-                                        case 80:
-                                        case 81:
-                                        case 82:
-                                            $weather_description = 'Rain';
-                                            $weather_icon = 'fa-cloud-showers-heavy';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/rainy.jpg';
-                                            break;
-                                        case 56:
-                                        case 57:
-                                        case 66:
-                                        case 67:
-                                            $weather_description = 'Freezing Rain';
-                                            $weather_icon = 'fa-cloud-hail-heavy';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/rainy.jpg';
-                                            break;
-                                        case 71:
-                                        case 73:
-                                        case 75:
-                                        case 77:
-                                        case 85:
-                                        case 86:
-                                            $weather_description = 'Snow';
-                                            $weather_icon = 'fa-snowflakes';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/cloudy.jpg';
-                                            break;
-                                        case 95:
-                                        case 96:
-                                        case 99:
-                                            $weather_description = 'Thunderstorm';
-                                            $weather_icon = 'fa-thunderstorm';
-                                            $weather_bg = 'https://dashboard.driftnimbus.com/assets/images/weather/thunderstorm.jpg';
-                                            break;
-                                    }
-                                    ?>
                                     <?php if ($weather_code !== null): ?>
-                                        <i class="fas <?php echo h($weather_icon); ?> text-white" style="font-size: 3rem;"></i>
+                                        <img src="<?php echo h($weather_icon); ?>" alt="Weather" style="width: 80px; height: 80px;">
                                         <h4 class="mb-0 mt-2 text-white"><?php echo h($temperature); ?>°C</h4>
                                         <p class="text-white"><?php echo h($weather_description); ?></p>
                                     <?php else: ?>
@@ -1057,7 +1118,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     <h5 class="card-title text-highlight text-white">Disk Usage</h5>
                                     <i class="fas fa-hdd text-white" style="font-size: 3rem;"></i>
                                     <?php if ($cPanelData['diskUsage'] !== null): ?>
-                                        <h4 class="mb-0 mt-2 text-white"><?php echo h($cPanelData['diskUsage']); ?> MB</h4>
+                                        <h4 class="mb-0 mt-2 text-white"><?php echo h($cPanelData['diskUsage']); ?> GB</h4>
                                         <p class="text-white">Used Space</p>
                                     <?php else: ?>
                                         <h4 class="mb-0 mt-2 text-white">N/A</h4>
@@ -1893,6 +1954,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="//code.tidio.co/agjwvfyqtdf2zxvwva8yijqjkymuprf1.js" async></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const showHidePassword = document.getElementById('show_hide_password');
@@ -1928,7 +1990,14 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
             updateTime();
             setInterval(updateTime, 1000);
 
-
+            const adminDomainSwitch = document.getElementById('adminDomainSwitch');
+            if (adminDomainSwitch) {
+                adminDomainSwitch.addEventListener('change', function() {
+                    if (this.value) {
+                        window.location.href = '?switch_domain=' + this.value;
+                    }
+                });
+            }
         });
     </script>
 
