@@ -13,7 +13,7 @@ jobs:
       with:
         server: ftp.driftnimbus.com
         username: dev@driftnimbus.com
-        password: ${{ secrets.FTP_PASSWORD }}
+        password: ${{ secrets.PASSWORD }}
         server-dir: /dashboard/
         exclude: |
           **/.git*
