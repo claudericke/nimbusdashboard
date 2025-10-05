@@ -1,0 +1,281 @@
+:root {
+    --primary-bg: #171420;
+    --secondary-bg: #2B2636;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --text-primary: #ffffff;
+    --text-secondary: #9694E7;
+    --highlight-color: #5F65F4;
+    --accent-color: #9694E7;
+    --ssl-green: #28a745;
+}
+
+body {
+    font-family: 'Lexend', sans-serif;
+    background: url(https://dashboard.driftnimbus.com/assets/images/bg-themes/body-background-1.webp);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Syne', sans-serif;
+    color: #fff;
+}
+
+.container-fluid {
+    max-width: 1400px;
+}
+
+.card {
+    background-color: #2B2636;
+    background-size: cover;
+    border-radius: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    /* Ensure children are positioned correctly */
+    overflow: hidden;
+    /* Prevent background from bleeding out of rounded corners */
+}
+
+.grad_bg {
+    background-image: url('https://dashboard.driftnimbus.com/assets/images/bg-themes/cardbg.jpg');
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 15px var(--highlight-color);
+}
+
+/* Define specific background positions for each card */
+.card:nth-child(1) {
+    background-position: 0% 10%;
+}
+
+.card:nth-child(2) {
+    background-position: 20% 30%;
+}
+
+.card:nth-child(3) {
+    background-position: 40% 50%;
+}
+
+.card:nth-child(4) {
+    background-position: 60% 70%;
+}
+
+.card:nth-child(5) {
+    background-position: 80% 90%;
+}
+
+/* Add a new class for a different background */
+.card-bg2 {
+    background-image: url('https://dashboard.driftnimbus.com/assets/images/bg-themes/cardbg2.jpg');
+}
+
+.bento-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 768px) {
+    .bento-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 992px) {
+    .bento-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .bento-grid .card.wide {
+        grid-column: span 2;
+    }
+
+    .bento-grid .card.full-width {
+        grid-column: 1 / -1;
+    }
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.navbar-top {
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-brand {
+    color: var(--text-primary);
+}
+
+.nav-link.active,
+.nav-link:hover {
+    color: var(--highlight-color) !important;
+}
+
+.btn-primary {
+    background-color: var(--highlight-color);
+    border-color: var(--highlight-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.btn-outline-secondary {
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.text-highlight {
+    color: var(--highlight-color);
+}
+
+.text-accent {
+    color: var(--accent-color);
+}
+
+.form-control {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    color: #000;
+}
+
+.form-control:focus {
+    background-color: #fff;
+    border-color: var(--highlight-color);
+    box-shadow: 0 0 0 0.25rem rgba(95, 101, 244, 0.25);
+    color: #000;
+}
+
+.form-control::placeholder {
+    color: #6c757d;
+}
+
+.table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    background-color: transparent;
+}
+
+.table-custom th,
+.table-custom td {
+    padding: 15px;
+    background-color: transparent;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.table-custom th {
+    text-align: left;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.table-custom tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-content {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+}
+
+.table-responsive {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.welcome-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 1rem;
+    margin-top: 1rem;
+}
+
+/* New Styles for Bentos */
+.bento-card {
+    background-color: #2D2D2D;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.bento-card-full {
+    grid-column: 1 / -1;
+}
+
+.bento-grid-login {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+}
+
+.login-card {
+    background-color: #1a1a1a;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.login-img-col {
+    background-image: url('https://dashboard.driftnimbus.com/assets/images/auth/nimbus-woman-1.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.weather-icon {
+    width: 50px;
+    height: 50px;
+}
+
+.time-widget {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.quote-card {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.quote-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    content: "";
+}
+
+.quote-content {
+    position: relative;
+    z-index: 1;
+}
