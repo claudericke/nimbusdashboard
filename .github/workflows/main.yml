@@ -22,3 +22,5 @@ jobs:
           **/.env
           **/vendor/**
           **/*.code-workspace
+          **/backup/**
+          **/backups/**
