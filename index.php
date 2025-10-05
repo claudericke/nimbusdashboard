@@ -475,6 +475,11 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
             // Quote from DB
             $cPanelData['quote'] = getQuote();
 
+            // Server Status Check
+            $fp = @fsockopen($cpanelDomain, 2083, $errno, $errstr, 5);
+            $cPanelData['serverStatus'] = $fp ? 'Online' : 'Offline';
+            if ($fp) fclose($fp);
+
             // News with pagination and category
             $newsPage = max(1, (int)($_GET['news_page'] ?? 1));
             $newsCategory = $_GET['news_cat'] ?? 'world';
@@ -1013,19 +1018,11 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                             <div class="card wide p-4" style="background-image: url('https://dashboard.driftnimbus.com/assets/images/main.jpg'); background-size: cover; background-position: center;">
                                 <div class="card-body">
                                     <h1 class="text-white fw-bold mb-2">Welcome, <br><?php echo h($cPanelData['welcomeName']); ?></h1>
-                                    <p class="text-white mb-1">Server Status: <span style="color: #28a745; font-weight: bold;">Online</span></p>
+                                    <p class="text-white mb-1">Server Status: <span style="color: <?php echo $cPanelData['serverStatus'] === 'Online' ? '#28a745' : '#dc3545'; ?>; font-weight: bold;"><?php echo h($cPanelData['serverStatus']); ?></span></p>
                                     <p class="text-white mb-0">Active Package: <?php echo h($userProfile['package'] ?? 'N/A'); ?></p>
                                 </div>
                             </div>
-                            <!-- Time Widget -->
-                            <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image: url('https://dashboard.driftnimbus.com/assets/images/bg-themes/cardbg2.jpg'); background-size: cover; background-position: center;">
-                                <div class="card-body w-100">
-                                    <h5 class="card-title text-highlight text-white">Current Time</h5>
-                                    <div class="time-widget text-white" id="time-widget"></div>
-                                    <p class="text-white">Harare, Zimbabwe</p>
-                                </div>
-                            </div>
-                            <!-- Weather Widget -->
+
                             <?php
                             $weather_code = $cPanelData['weather']['weather_code'] ?? null;
                             $temperature = $cPanelData['weather']['temperature_2m'] ?? 'N/A';
@@ -1112,6 +1109,15 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     <?php endif; ?>
                                 </div>
                             </div>
+                            <!-- Time Widget -->
+                            <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image: url('assets/images/bg-themes/clock.jpg'); background-size: cover; background-position: center;">
+                                <div class="card-body w-100">
+                                    <h5 class="card-title text-highlight text-white">Current Time</h5>
+                                    <div class="time-widget text-white" id="time-widget"></div>
+                                    <p class="text-white">Harare, Zimbabwe</p>
+                                </div>
+                            </div>
+                            <!-- Weather Widget -->
                             <!-- Disk Usage Card -->
                             <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center card-bg2">
                                 <div class="card-body w-100">
