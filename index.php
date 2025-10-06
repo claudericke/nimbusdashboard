@@ -569,9 +569,42 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                 'password' => $pwd,
                                 'domain'   => $cpanelDomain,
                             ]);
-                            $success = "Email account '{$email_full}' created successfully.";
+                            $_SESSION['new_email_created'] = [
+                                'email' => $email_full,
+                                'password' => $pwd,
+                                'domain' => $cpanelDomain
+                            ];
+                            header('Location: index.php?page=emails&sub=add&show_modal=1');
+                            exit;
                         } catch (Exception $e) {
                             $error = "Failed to create email account: " . h($e->getMessage());
+                        }
+                    }
+                } elseif (isset($_POST['send_email_details'])) {
+                    csrf_check();
+                    $recipient = trim($_POST['recipient_email'] ?? '');
+                    $emailAddr = trim($_POST['email_address'] ?? '');
+                    $emailPass = trim($_POST['email_password'] ?? '');
+                    $emailDomain = trim($_POST['email_domain'] ?? '');
+                    
+                    if ($recipient && $emailAddr && $emailPass) {
+                        $subject = "New Email Account Created on {$emailDomain}";
+                        $message = "<html><body>";
+                        $message .= "<img src='https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg' alt='Drift Nimbus' style='width: 180px; margin-bottom: 20px; background: #1e1e1e; padding: 10px;'>";
+                        $message .= "<p>A new account on <strong>{$emailDomain}</strong> has been created. Please find below the details of your new account:</p>";
+                        $message .= "<p><strong>Username:</strong><br>{$emailAddr}</p>";
+                        $message .= "<p><strong>Password:</strong><br>{$emailPass}</p>";
+                        $message .= "<p>You can access your email on <a href='https://mail.driftnimbus.com'>mail.driftnimbus.com</a>.</p>";
+                        $message .= "</body></html>";
+                        
+                        $headers = "MIME-Version: 1.0" . "\r\n";
+                        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+                        $headers .= "From: noreply@driftnimbus.com" . "\r\n";
+                        
+                        if (mail($recipient, $subject, $message, $headers)) {
+                            $success = "Email details sent to {$recipient} successfully.";
+                        } else {
+                            $error = "Failed to send email. Please try again.";
                         }
                     }
                 }
@@ -1242,6 +1275,65 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     </div>
                                 </div>
                             </div>
+                            
+                            <?php if (isset($_GET['show_modal']) && isset($_SESSION['new_email_created'])): ?>
+                                <?php
+                                $newEmailData = $_SESSION['new_email_created'];
+                                unset($_SESSION['new_email_created']);
+                                ?>
+                                <div class="modal fade" id="emailCreatedModal" tabindex="-1" aria-labelledby="emailCreatedModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title text-white" id="emailCreatedModalLabel">Email Account Created</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-white">A new account on <strong><?php echo h($newEmailData['domain']); ?></strong> has been created. Please find below the details of your new account:</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-white"><strong>Username:</strong></label>
+                                                    <p class="text-white"><?php echo h($newEmailData['email']); ?></p>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-white"><strong>Password:</strong></label>
+                                                    <p class="text-white"><?php echo h($newEmailData['password']); ?></p>
+                                                </div>
+                                                <p class="text-white">You can access your email on <a href="https://mail.driftnimbus.com" target="_blank">mail.driftnimbus.com</a>.</p>
+                                                <button type="button" class="btn btn-secondary w-100 mb-3" onclick="copyEmailDetails()"><i class="fas fa-copy"></i> Copy Message</button>
+                                                <hr>
+                                                <form method="POST" action="?page=emails&sub=add">
+                                                    <?php csrf_field(); ?>
+                                                    <input type="hidden" name="send_email_details" value="1">
+                                                    <input type="hidden" name="email_address" value="<?php echo h($newEmailData['email']); ?>">
+                                                    <input type="hidden" name="email_password" value="<?php echo h($newEmailData['password']); ?>">
+                                                    <input type="hidden" name="email_domain" value="<?php echo h($newEmailData['domain']); ?>">
+                                                    <div class="mb-3">
+                                                        <label for="recipient_email" class="form-label text-white">Send details to email:</label>
+                                                        <input type="email" class="form-control" id="recipient_email" name="recipient_email" placeholder="recipient@example.com" required>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-primary w-100">Send Email</button>
+                                                </form>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        const modal = new bootstrap.Modal(document.getElementById('emailCreatedModal'));
+                                        modal.show();
+                                    });
+                                    
+                                    function copyEmailDetails() {
+                                        const text = `A new account on <?php echo h($newEmailData['domain']); ?> has been created. Please find below the details of your new account:\n\nUsername:\n<?php echo h($newEmailData['email']); ?>\n\nPassword:\n<?php echo h($newEmailData['password']); ?>\n\nYou can access your email on mail.driftnimbus.com.`;
+                                        navigator.clipboard.writeText(text).then(() => {
+                                            alert('Message copied to clipboard!');
+                                        });
+                                    }
+                                </script>
+                            <?php endif; ?>
                         <?php else: ?>
                             <div class="bento-grid">
                                 <div class="card full-width p-4">
