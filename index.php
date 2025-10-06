@@ -693,18 +693,52 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                     $domain = trim($_POST['domain'] ?? '');
                     $api_token = trim($_POST['api_token'] ?? '');
                     $full_name = trim($_POST['full_name'] ?? '');
+                    $cpanel_password = trim($_POST['cpanel_password'] ?? '');
                     $is_superuser_val = isset($_POST['is_superuser']) ? 1 : 0;
                     $package = trim($_POST['package'] ?? 'Package not Found');
                     $conn = getDbConnection();
                     $stmt = $conn->prepare("INSERT INTO users (cpanel_username, domain, api_token, full_name, is_superuser, package) VALUES (?, ?, ?, ?, ?, ?)");
                     $stmt->bind_param("ssssis", $cpanel_username, $domain, $api_token, $full_name, $is_superuser_val, $package);
                     if ($stmt->execute()) {
-                        $success = "User added successfully.";
+                        $_SESSION['new_user_created'] = [
+                            'username' => $cpanel_username,
+                            'password' => $cpanel_password,
+                            'domain' => $domain
+                        ];
+                        header('Location: index.php?page=admin&show_user_modal=1');
+                        exit;
                     } else {
                         $error = "Failed to add user: " . h($conn->error);
                     }
                     $stmt->close();
                     $conn->close();
+                } elseif (isset($_POST['send_user_details'])) {
+                    csrf_check();
+                    $recipient = trim($_POST['recipient_email'] ?? '');
+                    $username = trim($_POST['user_username'] ?? '');
+                    $password = trim($_POST['user_password'] ?? '');
+                    $domain = trim($_POST['user_domain'] ?? '');
+                    
+                    if ($recipient && $username && $password) {
+                        $subject = "New Hosting Account Created on {$domain}";
+                        $message = "<html><body>";
+                        $message .= "<img src='https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg' alt='Drift Nimbus' style='width: 180px; margin-bottom: 20px; background: #1e1e1e; padding: 10px;'>";
+                        $message .= "<p>A new hosting account on <strong>{$domain}</strong> has been created. Please find below the details of your new account:</p>";
+                        $message .= "<p><strong>Username:</strong><br>{$username}</p>";
+                        $message .= "<p><strong>Password:</strong><br>{$password}</p>";
+                        $message .= "<p>You can access your cPanel on <a href='https://cpanel.{$domain}'>cpanel.{$domain}</a>.</p>";
+                        $message .= "</body></html>";
+                        
+                        $headers = "MIME-Version: 1.0" . "\r\n";
+                        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+                        $headers .= "From: noreply@driftnimbus.com" . "\r\n";
+                        
+                        if (mail($recipient, $subject, $message, $headers)) {
+                            $success = "User details sent to {$recipient} successfully.";
+                        } else {
+                            $error = "Failed to send email. Please try again.";
+                        }
+                    }
                 } elseif (isset($_POST['edit_user'])) {
                     $id = (int)($_POST['id'] ?? 0);
                     $cpanel_username = trim($_POST['cpanel_username'] ?? '');
@@ -1734,6 +1768,10 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                                 <input type="text" class="form-control" name="api_token" required>
                                             </div>
                                             <div class="mb-3">
+                                                <label for="cpanel_password" class="form-label text-white">cPanel Password</label>
+                                                <input type="password" class="form-control" name="cpanel_password" placeholder="For email notification only">
+                                            </div>
+                                            <div class="mb-3">
                                                 <label for="full_name" class="form-label text-white">Full Name</label>
                                                 <input type="text" class="form-control" name="full_name">
                                             </div>
@@ -1970,6 +2008,65 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                 document.getElementById('delete-quote-id').value = id;
                             });
                         </script>
+                        
+                        <?php if (isset($_GET['show_user_modal']) && isset($_SESSION['new_user_created'])): ?>
+                            <?php
+                            $newUserData = $_SESSION['new_user_created'];
+                            unset($_SESSION['new_user_created']);
+                            ?>
+                            <div class="modal fade" id="userCreatedModal" tabindex="-1" aria-labelledby="userCreatedModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title text-white" id="userCreatedModalLabel">User Account Created</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="text-white">A new hosting account on <strong><?php echo h($newUserData['domain']); ?></strong> has been created. Please find below the details of your new account:</p>
+                                            <div class="mb-3">
+                                                <label class="form-label text-white"><strong>Username:</strong></label>
+                                                <p class="text-white"><?php echo h($newUserData['username']); ?></p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label text-white"><strong>Password:</strong></label>
+                                                <p class="text-white"><?php echo h($newUserData['password']); ?></p>
+                                            </div>
+                                            <p class="text-white">You can access your cPanel on <a href="https://cpanel.<?php echo h($newUserData['domain']); ?>" target="_blank">cpanel.<?php echo h($newUserData['domain']); ?></a>.</p>
+                                            <button type="button" class="btn btn-secondary w-100 mb-3" onclick="copyUserDetails()"><i class="fas fa-copy"></i> Copy Message</button>
+                                            <hr>
+                                            <form method="POST" action="?page=admin">
+                                                <?php csrf_field(); ?>
+                                                <input type="hidden" name="send_user_details" value="1">
+                                                <input type="hidden" name="user_username" value="<?php echo h($newUserData['username']); ?>">
+                                                <input type="hidden" name="user_password" value="<?php echo h($newUserData['password']); ?>">
+                                                <input type="hidden" name="user_domain" value="<?php echo h($newUserData['domain']); ?>">
+                                                <div class="mb-3">
+                                                    <label for="recipient_email" class="form-label text-white">Send details to email:</label>
+                                                    <input type="email" class="form-control" id="recipient_email" name="recipient_email" placeholder="recipient@example.com" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary w-100">Send Email</button>
+                                            </form>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const modal = new bootstrap.Modal(document.getElementById('userCreatedModal'));
+                                    modal.show();
+                                });
+                                
+                                function copyUserDetails() {
+                                    const text = `A new hosting account on <?php echo h($newUserData['domain']); ?> has been created. Please find below the details of your new account:\n\nUsername:\n<?php echo h($newUserData['username']); ?>\n\nPassword:\n<?php echo h($newUserData['password']); ?>\n\nYou can access your cPanel on cpanel.<?php echo h($newUserData['domain']); ?>.`;
+                                    navigator.clipboard.writeText(text).then(() => {
+                                        alert('Message copied to clipboard!');
+                                    });
+                                }
+                            </script>
+                        <?php endif; ?>
 
                     <?php elseif ($page === 'payment-success'): ?>
                         <div class="bento-grid">
