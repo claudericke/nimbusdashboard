@@ -647,7 +647,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
             $pageNumber = max(1, (int)($_GET['p'] ?? 1));
             $offset = ($pageNumber - 1) * $perPage;
 
-            $emails = uapi_call($cpanelDomain, $cpanelUser, $cpanelApiToken, 'Email', 'list_pops');
+            $emails = uapi_call($cpanelDomain, $cpanelUser, $cpanelApiToken, 'Email', 'list_pops_with_disk');
             $allEmails = $emails['data'] ?? [];
             $cPanelData['emails'] = array_slice($allEmails, $offset, $perPage);
             $cPanelData['totalPages'] = max(1, (int)ceil((count($allEmails) ?: 1) / $perPage));
@@ -1433,7 +1433,16 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                                             ?>
                                                             <tr>
                                                                 <td><?php echo h($emailAddress); ?></td>
-                                                                <td><?php echo h($email['_diskused'] ?? '0'); ?>/<?php echo h($email['_diskquota'] ?? 'unlimited'); ?> MB</td>
+                                                                <td>
+                                                                    <?php 
+                                                                    $diskUsed = round(($email['diskused'] ?? $email['_diskused'] ?? 0), 2);
+                                                                    $diskQuota = $email['diskquota'] ?? $email['_diskquota'] ?? 'unlimited';
+                                                                    if ($diskQuota !== 'unlimited') {
+                                                                        $diskQuota = round($diskQuota, 2);
+                                                                    }
+                                                                    echo h($diskUsed) . '/' . h($diskQuota) . ' MB';
+                                                                    ?>
+                                                                </td>
                                                                 <td>
                                                                     <button type="button"
                                                                         class="btn btn-sm btn-warning me-2"
