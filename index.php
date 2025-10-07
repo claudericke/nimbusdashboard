@@ -545,10 +545,43 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     'domain' => $domainPart,
                                     'password' => $newPassword,
                                 ]);
-                                $success = "Password changed successfully for '{$emailToChange}'.";
+                                $_SESSION['password_changed'] = [
+                                    'email' => $emailToChange,
+                                    'password' => $newPassword,
+                                    'domain' => $domainPart
+                                ];
+                                header('Location: index.php?page=emails&show_password_modal=1');
+                                exit;
                             } catch (Exception $e) {
                                 $error = "Failed to change password: " . h($e->getMessage());
                             }
+                        }
+                    }
+                } elseif (isset($_POST['send_password_details'])) {
+                    csrf_check();
+                    $recipient = trim($_POST['recipient_email'] ?? '');
+                    $emailAddr = trim($_POST['email_address'] ?? '');
+                    $emailPass = trim($_POST['email_password'] ?? '');
+                    $emailDomain = trim($_POST['email_domain'] ?? '');
+
+                    if ($recipient && $emailAddr && $emailPass) {
+                        $subject = "Password Changed for {$emailAddr}";
+                        $message = "<html><body>";
+                        $message .= "<img src='https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg' alt='Drift Nimbus' style='width: 180px; margin-bottom: 20px; background: #1e1e1e; padding: 10px;'>";
+                        $message .= "<p>The password for your email account on <strong>{$emailDomain}</strong> has been changed. Please find below the updated details:</p>";
+                        $message .= "<p><strong>Username:</strong><br>{$emailAddr}</p>";
+                        $message .= "<p><strong>New Password:</strong><br>{$emailPass}</p>";
+                        $message .= "<p>You can access your email on <a href='https://mail.driftnimbus.com'>mail.driftnimbus.com</a>.</p>";
+                        $message .= "</body></html>";
+
+                        $headers = "MIME-Version: 1.0" . "\r\n";
+                        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+                        $headers .= "From: noreply@driftnimbus.com" . "\r\n";
+
+                        if (mail($recipient, $subject, $message, $headers)) {
+                            $success = "Password details sent to {$recipient} successfully.";
+                        } else {
+                            $error = "Failed to send email. Please try again.";
                         }
                     }
                 } elseif ($subPage === 'add') {
@@ -586,7 +619,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                     $emailAddr = trim($_POST['email_address'] ?? '');
                     $emailPass = trim($_POST['email_password'] ?? '');
                     $emailDomain = trim($_POST['email_domain'] ?? '');
-                    
+
                     if ($recipient && $emailAddr && $emailPass) {
                         $subject = "New Email Account Created on {$emailDomain}";
                         $message = "<html><body>";
@@ -596,11 +629,11 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                         $message .= "<p><strong>Password:</strong><br>{$emailPass}</p>";
                         $message .= "<p>You can access your email on <a href='https://mail.driftnimbus.com'>mail.driftnimbus.com</a>.</p>";
                         $message .= "</body></html>";
-                        
+
                         $headers = "MIME-Version: 1.0" . "\r\n";
                         $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
                         $headers .= "From: noreply@driftnimbus.com" . "\r\n";
-                        
+
                         if (mail($recipient, $subject, $message, $headers)) {
                             $success = "Email details sent to {$recipient} successfully.";
                         } else {
@@ -718,7 +751,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                     $username = trim($_POST['user_username'] ?? '');
                     $password = trim($_POST['user_password'] ?? '');
                     $domain = trim($_POST['user_domain'] ?? '');
-                    
+
                     if ($recipient && $username && $password) {
                         $subject = "New Hosting Account Created on {$domain}";
                         $message = "<html><body>";
@@ -728,11 +761,11 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                         $message .= "<p><strong>Password:</strong><br>{$password}</p>";
                         $message .= "<p>You can access your cPanel on <a href='https://cpanel.{$domain}'>cpanel.{$domain}</a>.</p>";
                         $message .= "</body></html>";
-                        
+
                         $headers = "MIME-Version: 1.0" . "\r\n";
                         $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
                         $headers .= "From: noreply@driftnimbus.com" . "\r\n";
-                        
+
                         if (mail($recipient, $subject, $message, $headers)) {
                             $success = "User details sent to {$recipient} successfully.";
                         } else {
@@ -1309,7 +1342,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <?php if (isset($_GET['show_modal']) && isset($_SESSION['new_email_created'])): ?>
                                 <?php
                                 $newEmailData = $_SESSION['new_email_created'];
@@ -1359,9 +1392,9 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                         const modal = new bootstrap.Modal(document.getElementById('emailCreatedModal'));
                                         modal.show();
                                     });
-                                    
+
                                     function copyEmailDetails() {
-                                        const text = `A new account on <?php echo h($newEmailData['domain']); ?> has been created. Please find below the details of your new account:\n\nUsername:\n<?php echo h($newEmailData['email']); ?>\n\nPassword:\n<?php echo h($newEmailData['password']); ?>\n\nYou can access your email on mail.driftnimbus.com.`;
+                                        const text = <?php echo json_encode("A new account on {$newEmailData['domain']} has been created. Please find below the details of your new account:\n\nUsername:\n{$newEmailData['email']}\n\nPassword:\n{$newEmailData['password']}\n\nYou can access your email on mail.driftnimbus.com."); ?>;
                                         navigator.clipboard.writeText(text).then(() => {
                                             alert('Message copied to clipboard!');
                                         });
@@ -1378,6 +1411,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                                 <thead>
                                                     <tr>
                                                         <th>Email</th>
+                                                        <th>Disk Usage</th>
                                                         <th>Actions</th>
                                                     </tr>
                                                 </thead>
@@ -1399,6 +1433,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                                             ?>
                                                             <tr>
                                                                 <td><?php echo h($emailAddress); ?></td>
+                                                                <td><?php echo h($email['_diskused'] ?? '0'); ?>/<?php echo h($email['_diskquota'] ?? 'unlimited'); ?> MB</td>
                                                                 <td>
                                                                     <button type="button"
                                                                         class="btn btn-sm btn-warning me-2"
@@ -1524,6 +1559,65 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     });
                                 }
                             </script>
+
+                            <?php if (isset($_GET['show_password_modal']) && isset($_SESSION['password_changed'])): ?>
+                                <?php
+                                $passwordData = $_SESSION['password_changed'];
+                                unset($_SESSION['password_changed']);
+                                ?>
+                                <div class="modal fade" id="passwordChangedModal" tabindex="-1" aria-labelledby="passwordChangedModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title text-white" id="passwordChangedModalLabel">Password Changed Successfully</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-white">The password for your email account on <strong><?php echo h($passwordData['domain']); ?></strong> has been changed. Please find below the updated details:</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-white"><strong>Username:</strong></label>
+                                                    <p class="text-white"><?php echo h($passwordData['email']); ?></p>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-white"><strong>New Password:</strong></label>
+                                                    <p class="text-white"><?php echo h($passwordData['password']); ?></p>
+                                                </div>
+                                                <p class="text-white">You can access your email on <a href="https://mail.driftnimbus.com" target="_blank">mail.driftnimbus.com</a>.</p>
+                                                <button type="button" class="btn btn-secondary w-100 mb-3" onclick="copyPasswordDetails()"><i class="fas fa-copy"></i> Copy Message</button>
+                                                <hr>
+                                                <form method="POST" action="?page=emails">
+                                                    <?php csrf_field(); ?>
+                                                    <input type="hidden" name="send_password_details" value="1">
+                                                    <input type="hidden" name="email_address" value="<?php echo h($passwordData['email']); ?>">
+                                                    <input type="hidden" name="email_password" value="<?php echo h($passwordData['password']); ?>">
+                                                    <input type="hidden" name="email_domain" value="<?php echo h($passwordData['domain']); ?>">
+                                                    <div class="mb-3">
+                                                        <label for="recipient_email_pwd" class="form-label text-white">Send details to email:</label>
+                                                        <input type="email" class="form-control" id="recipient_email_pwd" name="recipient_email" placeholder="recipient@example.com" required>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-primary w-100">Send Email</button>
+                                                </form>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        const modal = new bootstrap.Modal(document.getElementById('passwordChangedModal'));
+                                        modal.show();
+                                    });
+
+                                    function copyPasswordDetails() {
+                                        const text = <?php echo json_encode("The password for your email account on {$passwordData['domain']} has been changed. Please find below the updated details:\n\nUsername:\n{$passwordData['email']}\n\nNew Password:\n{$passwordData['password']}\n\nYou can access your email on mail.driftnimbus.com."); ?>;
+                                        navigator.clipboard.writeText(text).then(() => {
+                                            alert('Message copied to clipboard!');
+                                        });
+                                    }
+                                </script>
+                            <?php endif; ?>
 
                         <?php endif; ?>
 
@@ -2008,7 +2102,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                 document.getElementById('delete-quote-id').value = id;
                             });
                         </script>
-                        
+
                         <?php if (isset($_GET['show_user_modal']) && isset($_SESSION['new_user_created'])): ?>
                             <?php
                             $newUserData = $_SESSION['new_user_created'];
@@ -2058,9 +2152,9 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     const modal = new bootstrap.Modal(document.getElementById('userCreatedModal'));
                                     modal.show();
                                 });
-                                
+
                                 function copyUserDetails() {
-                                    const text = `A new hosting account on <?php echo h($newUserData['domain']); ?> has been created. Please find below the details of your new account:\n\nUsername:\n<?php echo h($newUserData['username']); ?>\n\nPassword:\n<?php echo h($newUserData['password']); ?>\n\nYou can access your cPanel on cpanel.<?php echo h($newUserData['domain']); ?>.`;
+                                    const text = <?php echo json_encode("A new hosting account on {$newUserData['domain']} has been created. Please find below the details of your new account:\n\nUsername:\n{$newUserData['username']}\n\nPassword:\n{$newUserData['password']}\n\nYou can access your cPanel on cpanel.{$newUserData['domain']}."); ?>;
                                     navigator.clipboard.writeText(text).then(() => {
                                         alert('Message copied to clipboard!');
                                     });
@@ -2101,7 +2195,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
 
         <footer class="text-center py-3 navbar-top mt-auto">
             <div class="container-fluid">
-                <span class="text-white">© <?php echo date('Y'); ?>. Powered By Drift Nimbus.</span>
+                <span class="text-white">© <?php echo date('Y'); ?>. Powered By Drift Nimbus. v<?php echo h($_ENV['APP_VERSION'] ?? '1.0.0'); ?></span>
             </div>
         </footer>
 
