@@ -888,6 +888,16 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                 padding: 1.5rem 0;
                 overflow-y: auto;
                 z-index: 1000;
+                transition: transform 0.3s ease;
+            }
+
+            @media (max-width: 768px) {
+                .sidebar {
+                    transform: translateX(-100%);
+                }
+                .sidebar.show {
+                    transform: translateX(0);
+                }
             }
 
             .sidebar-logo {
@@ -994,9 +1004,55 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                 display: flex;
                 flex-direction: column;
             }
+
+            @media (max-width: 768px) {
+                .main-content {
+                    margin-left: 0;
+                }
+            }
+
+            .sidebar-toggle {
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 1001;
+                background: #1e1e1e;
+                border: 1px solid #3a3a3a;
+                color: #fff;
+                padding: 0.5rem 0.75rem;
+                border-radius: 0.375rem;
+                cursor: pointer;
+            }
+
+            @media (min-width: 769px) {
+                .sidebar-toggle {
+                    display: none;
+                }
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+
+            @media (max-width: 768px) {
+                .sidebar-overlay.show {
+                    display: block;
+                }
+            }
         </style>
 
-        <aside class="sidebar">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
                 <a href="?page=dashboard">
                     <img src="https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg" alt="Drift Nimbus" style="width: 100%; max-width: 180px;">
@@ -2294,6 +2350,22 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                     if (this.value) {
                         window.location.href = '?switch_domain=' + this.value;
                     }
+                });
+            }
+
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebarToggle && sidebar && sidebarOverlay) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                });
+                
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
                 });
             }
         });
