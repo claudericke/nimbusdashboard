@@ -26,3 +26,7 @@ Thumbs.db
 # Exclude backup folders
 **/backup/
 **/backups/
+
+# Exclude diagnostic files
+*.test-api.php
+*.test.txt

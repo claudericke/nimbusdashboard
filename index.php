@@ -34,6 +34,7 @@ define('ZOHO_REFRESH_TOKEN', $_ENV['ZOHO_REFRESH_TOKEN'] ?? '');
 
 // -------------------- HELPERS --------------------
 require 'helpers.php';
+require 'trello.php';
 
 function h($s)
 {
@@ -135,6 +136,31 @@ function deleteQuote($id)
     $stmt->close();
     $conn->close();
     return $success;
+}
+
+function getUserPermissions($role)
+{
+    $conn = getDbConnection();
+    $stmt = $conn->prepare("SELECT menu_item, can_access FROM permissions WHERE role_name = ?");
+    $stmt->bind_param("s", $role);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $permissions = [];
+    while ($row = $result->fetch_assoc()) {
+        $permissions[$row['menu_item']] = (bool)$row['can_access'];
+    }
+    $stmt->close();
+    $conn->close();
+    return $permissions;
+}
+
+function canAccess($menuItem, $userRole)
+{
+    static $permissions = null;
+    if ($permissions === null) {
+        $permissions = getUserPermissions($userRole);
+    }
+    return $permissions[$menuItem] ?? false;
 }
 
 // -------------------- CPANEL UAPI --------------------
@@ -348,6 +374,60 @@ $userProfile = null;
 $loggedIn = false;
 $isSuperuser = false;
 
+// Handle Trello get_card action before any output
+if ($page === 'tickets' && isset($_GET['action']) && $_GET['action'] === 'get_card') {
+    header('Content-Type: application/json');
+    try {
+        $cardId = $_GET['card_id'] ?? '';
+        $cardData = trello_get_card($cardId);
+        echo json_encode($cardData);
+    } catch (Exception $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// Handle check_tickets action for polling
+if ($page === 'tickets' && isset($_GET['action']) && $_GET['action'] === 'check_tickets') {
+    header('Content-Type: application/json');
+    try {
+        $supportBoard = trello_get_board_by_name('SUPPORT TEAM');
+        if (!$supportBoard) {
+            echo json_encode(['error' => 'SUPPORT TEAM board not found']);
+            exit;
+        }
+        
+        $openList = trello_get_list_by_name($supportBoard['id'], 'Open Tickets');
+        if (!$openList) {
+            echo json_encode(['error' => 'Open Tickets list not found']);
+            exit;
+        }
+        
+        $cards = trello_get_cards($openList['id']);
+        $cardIds = array_map(function($card) { return $card['id']; }, $cards);
+        
+        echo json_encode(['count' => count($cards), 'ids' => $cardIds]);
+    } catch (Exception $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// Handle Trello card move before any output
+if ($page === 'tickets' && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['move_card'])) {
+    csrf_check();
+    try {
+        $cardId = $_POST['card_id'] ?? '';
+        $targetListId = $_POST['target_list_id'] ?? '';
+        trello_move_card($cardId, $targetListId);
+        trello_call('/cards/' . $cardId, 'PUT', ['dueComplete' => 'true']);
+        header('Location: ?page=tickets&sub=open');
+        exit;
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
 if ($page === 'payment-success' || $page === 'payment-failed') {
     $loggedIn = true;
 }
@@ -365,10 +445,10 @@ if (isset($_GET['switch_domain']) && isset($_SESSION['is_superuser']) && $_SESSI
     $conn->close();
     if ($switchUser) {
         $_SESSION['admin_original_user'] = $_SESSION['cpanel_username'];
-        $_SESSION['admin_original_domain'] = $_SESSION['cpanel_domain'];
+        $_SESSION['admin_original_domain'] = $_SESSION['domain'];
         $_SESSION['admin_original_token'] = $_SESSION['cpanel_api_token'];
         $_SESSION['cpanel_username'] = $switchUser['cpanel_username'];
-        $_SESSION['cpanel_domain'] = $switchUser['domain'];
+        $_SESSION['domain'] = $switchUser['domain'];
         $_SESSION['cpanel_api_token'] = $switchUser['api_token'];
         header('Location: index.php');
         exit;
@@ -387,57 +467,78 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $page === 'login') {
     csrf_check();
     $domain = trim($_POST['domain'] ?? '');
-    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if ($domain === '' || $username === '' || $password === '') {
-        $error = "Please provide domain, username and password.";
+    if ($domain === '' || $password === '') {
+        $error = "Please provide domain and password.";
     } else {
-        // 1) Try DB token first
-        $userFromDb = getUserProfile($username, $domain);
-        if ($userFromDb && !empty($userFromDb['api_token'])) {
+        // Fetch user from database by domain
+        $conn = getDbConnection();
+        $stmt = $conn->prepare("SELECT * FROM users WHERE domain = ? LIMIT 1");
+        $stmt->bind_param("s", $domain);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $userFromDb = $result->fetch_assoc();
+        $stmt->close();
+        $conn->close();
+
+        if (!$userFromDb) {
+            $error = "Domain not found in system.";
+        } else {
+            $username = $userFromDb['cpanel_username'];
+            $userRole = $userFromDb['user_role'] ?? 'client';
+
+            // 1) Try DB token first
+            if (!empty($userFromDb['api_token'])) {
+                try {
+                    uapi_call($domain, $username, $userFromDb['api_token'], 'Email', 'list_pops');
+                    $_SESSION['cpanel_username']  = $username;
+                    $_SESSION['domain']    = $domain;
+                    $_SESSION['cpanel_api_token'] = $userFromDb['api_token'];
+                    $_SESSION['is_superuser']     = (int)($userFromDb['is_superuser'] ?? 0);
+                    $_SESSION['user_role']        = $userRole;
+                    header('Location: index.php');
+                    exit;
+                } catch (Exception $e) {
+                    // fall through to create a new token
+                }
+            }
+
+            // 2) Create fresh token with password
             try {
-                uapi_call($domain, $username, $userFromDb['api_token'], 'Email', 'list_pops');
+                $apiToken = cpanel_create_token_with_password($domain, $username, $password, 'DriftNimbusDashboard');
                 $_SESSION['cpanel_username']  = $username;
-                $_SESSION['cpanel_domain']    = $domain;
-                $_SESSION['cpanel_api_token'] = $userFromDb['api_token'];
+                $_SESSION['domain']    = $domain;
+                $_SESSION['cpanel_api_token'] = $apiToken;
                 $_SESSION['is_superuser']     = (int)($userFromDb['is_superuser'] ?? 0);
+                $_SESSION['user_role']        = $userRole;
+
+                // Persist for next time
+                updateUserProfile($username, $domain, $userFromDb['full_name'] ?? null, $userFromDb['profile_picture_url'] ?? null, $apiToken);
+
                 header('Location: index.php');
                 exit;
             } catch (Exception $e) {
-                // fall through to create a new token
+                $error = "Login failed. " . h($e->getMessage());
             }
-        }
-
-        // 2) Create fresh token with password
-        try {
-            $apiToken = cpanel_create_token_with_password($domain, $username, $password, 'DriftNimbusDashboard');
-            $_SESSION['cpanel_username']  = $username;
-            $_SESSION['cpanel_domain']    = $domain;
-            $_SESSION['cpanel_api_token'] = $apiToken;
-            $_SESSION['is_superuser']     = (int)($userFromDb['is_superuser'] ?? 0);
-
-            // Persist for next time
-            updateUserProfile($username, $domain, $userFromDb['full_name'] ?? null, $userFromDb['profile_picture_url'] ?? null, $apiToken);
-
-            header('Location: index.php');
-            exit;
-        } catch (Exception $e) {
-            $error = "Login failed. " . h($e->getMessage());
         }
     }
 }
 
 // -------------------- AUTH SESSION --------------------
-if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['cpanel_api_token'])) {
+if (isset($_SESSION['cpanel_username'], $_SESSION['domain'], $_SESSION['cpanel_api_token'])) {
     $loggedIn     = true;
     $cpanelUser   = $_SESSION['cpanel_username'];
-    $cpanelDomain = $_SESSION['cpanel_domain'];
+    $cpanelDomain = $_SESSION['domain'];
     $cpanelApiToken = $_SESSION['cpanel_api_token'];
     $isSuperuser  = (int)($_SESSION['is_superuser'] ?? 0);
+    $userRole     = $_SESSION['user_role'] ?? 'client';
 
     // Fetch user profile (optional)
     $userProfile = getUserProfile($cpanelUser, $cpanelDomain);
+
+    // Load user permissions
+    $userPermissions = getUserPermissions($userRole);
 
     try {
         if ($page === 'dashboard') {
@@ -721,7 +822,19 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
             $quotes_count = count(getQuotes());
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 csrf_check();
-                if (isset($_POST['add_user'])) {
+                if (isset($_POST['update_permission'])) {
+                    $role_name = trim($_POST['role_name'] ?? '');
+                    $menu_item = trim($_POST['menu_item'] ?? '');
+                    $can_access = (int)($_POST['can_access'] ?? 0);
+                    $conn = getDbConnection();
+                    $stmt = $conn->prepare("UPDATE permissions SET can_access = ? WHERE role_name = ? AND menu_item = ?");
+                    $stmt->bind_param("iss", $can_access, $role_name, $menu_item);
+                    $stmt->execute();
+                    $stmt->close();
+                    $conn->close();
+                    header('Location: ?page=admin&sub=permissions');
+                    exit;
+                } elseif (isset($_POST['add_user'])) {
                     $cpanel_username = trim($_POST['cpanel_username'] ?? '');
                     $domain = trim($_POST['domain'] ?? '');
                     $api_token = trim($_POST['api_token'] ?? '');
@@ -895,6 +1008,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                 .sidebar {
                     transform: translateX(-100%);
                 }
+
                 .sidebar.show {
                     transform: translateX(0);
                 }
@@ -1037,7 +1151,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.5);
+                background: rgba(0, 0, 0, 0.5);
                 z-index: 999;
             }
 
@@ -1129,6 +1243,19 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                 </li>
                 <?php if ($isSuperuser): ?>
                     <li class="sidebar-nav-item">
+                        <a href="#ticketsSubmenu" class="sidebar-nav-link <?php echo $page === 'tickets' ? 'active' : ''; ?>" data-bs-toggle="collapse" aria-expanded="<?php echo $page === 'tickets' ? 'true' : 'false'; ?>">
+                            <i class="fas fa-ticket-alt"></i>
+                            <span>Tickets</span>
+                            <i class="fas fa-chevron-right chevron"></i>
+                        </a>
+                        <ul class="collapse sidebar-submenu <?php echo $page === 'tickets' ? 'show' : ''; ?>" id="ticketsSubmenu">
+                            <li><a href="?page=tickets&sub=new" class="sidebar-submenu-link">New Ticket</a></li>
+                            <li><a href="?page=tickets&sub=open" class="sidebar-submenu-link">Open Tickets</a></li>
+                            <li><a href="?page=tickets&sub=awaiting" class="sidebar-submenu-link">Awaiting Response</a></li>
+                            <li><a href="?page=tickets&sub=closed" class="sidebar-submenu-link">Closed Tickets</a></li>
+                        </ul>
+                    </li>
+                    <li class="sidebar-nav-item">
                         <a href="#adminSubmenu" class="sidebar-nav-link <?php echo $page === 'admin' ? 'active' : ''; ?>" data-bs-toggle="collapse" aria-expanded="<?php echo $page === 'admin' ? 'true' : 'false'; ?>">
                             <i class="fas fa-user-shield"></i>
                             <span>Admin</span>
@@ -1137,6 +1264,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                         <ul class="collapse sidebar-submenu <?php echo $page === 'admin' ? 'show' : ''; ?>" id="adminSubmenu">
                             <li><a href="?page=admin" class="sidebar-submenu-link">Manage Users</a></li>
                             <li><a href="?page=admin&sub=quotes" class="sidebar-submenu-link">Manage Quotes</a></li>
+                            <li><a href="?page=admin&sub=permissions" class="sidebar-submenu-link">Manage Permissions</a></li>
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -1490,7 +1618,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                                             <tr>
                                                                 <td><?php echo h($emailAddress); ?></td>
                                                                 <td>
-                                                                    <?php 
+                                                                    <?php
                                                                     $diskUsed = round(($email['diskused'] ?? $email['_diskused'] ?? 0), 2);
                                                                     $diskQuota = $email['diskquota'] ?? $email['_diskquota'] ?? 'unlimited';
                                                                     if ($diskQuota !== 'unlimited') {
@@ -1808,18 +1936,318 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                             </div>
                         </div>
 
+                    <?php elseif ($page === 'tickets' && $isSuperuser): ?>
+                        <?php
+                        $ticketSub = $subPage ?: 'open';
+
+                        try {
+                            $supportBoard = trello_get_board_by_name('SUPPORT TEAM');
+                            if (!$supportBoard) {
+                                throw new Exception('SUPPORT TEAM board not found');
+                            }
+
+                            $openList = trello_get_list_by_name($supportBoard['id'], 'Open Tickets');
+                            $closedList = trello_get_list_by_name($supportBoard['id'], 'Closed Tickets');
+                            $awaitingList = trello_get_list_by_name($supportBoard['id'], 'Tickets Awaiting Response');
+
+                            if (!$openList) {
+                                throw new Exception('Open Tickets list not found');
+                            }
+                            if (!$closedList) {
+                                throw new Exception('Closed Tickets list not found');
+                            }
+
+                            if ($ticketSub === 'open') {
+                                $cards = trello_get_cards($openList['id']);
+                            } elseif ($ticketSub === 'closed') {
+                                $cards = trello_get_cards($closedList['id']);
+                            } elseif ($ticketSub === 'awaiting' && $awaitingList) {
+                                $cards = trello_get_cards($awaitingList['id']);
+                            } else {
+                                $cards = [];
+                            }
+                        } catch (Exception $e) {
+                            $cards = [];
+                            $trelloError = $e->getMessage();
+                        }
+                        ?>
+                        <div class="bento-grid">
+                            <div class="card full-width p-4">
+                                <div class="card-body">
+                                    <?php if ($ticketSub === 'new'): ?>
+                                        <h2 class="card-title text-highlight text-white mb-4">New Ticket</h2>
+                                        <p class="text-white">Create a new support ticket on Trello:</p>
+                                        <a href="https://trello.com/b/<?php echo h($supportBoard['shortLink'] ?? ''); ?>" target="_blank" class="btn btn-primary">Open Trello Board</a>
+
+                                    <?php elseif ($ticketSub === 'open'): ?>
+                                        <h2 class="card-title text-highlight text-white mb-4">Open Support Tickets</h2>
+
+                                        <?php if (isset($trelloError)): ?>
+                                            <div class="alert alert-danger"><?php echo h($trelloError); ?></div>
+                                        <?php elseif ($error): ?>
+                                            <div class="alert alert-danger"><?php echo h($error); ?></div>
+                                        <?php endif; ?>
+
+                                        <?php if (!empty($cards)): ?>
+                                            <div class="table-responsive">
+                                                <table class="table-custom">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width: 40px;"></th>
+                                                            <th>Ticket</th>
+                                                            <th>Labels</th>
+                                                            <th>Start Date</th>
+                                                            <th>Due Date</th>
+                                                            <th>Assigned To</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($cards as $card): ?>
+                                                            <tr>
+                                                                <td>
+                                                                    <form method="POST" action="?page=tickets&sub=open" style="margin: 0;">
+                                                                        <?php csrf_field(); ?>
+                                                                        <input type="hidden" name="move_card" value="1">
+                                                                        <input type="hidden" name="card_id" value="<?php echo h($card['id']); ?>">
+                                                                        <input type="hidden" name="target_list_id" value="<?php echo h($closedList['id']); ?>">
+                                                                        <input type="checkbox" onchange="this.form.submit()" style="width: 20px; height: 20px; cursor: pointer;">
+                                                                    </form>
+                                                                </td>
+                                                                <td>
+                                                                    <a href="javascript:void(0)" onclick="openCardModal('<?php echo h($card['id']); ?>')" class="text-white text-decoration-none">
+                                                                        <?php echo h($card['name']); ?>
+                                                                    </a>
+                                                                </td>
+                                                                <td>
+                                                                    <?php if (!empty($card['labels'])): ?>
+                                                                        <?php foreach ($card['labels'] as $label): ?>
+                                                                            <span class="badge me-1" style="background-color: <?php echo h($label['color']); ?>;">
+                                                                                <?php echo h($label['name'] ?: $label['color']); ?>
+                                                                            </span>
+                                                                        <?php endforeach; ?>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">-</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><?php echo !empty($card['start']) ? date('M d, Y', strtotime($card['start'])) : '<span class="text-muted">-</span>'; ?></td>
+                                                                <td><?php echo !empty($card['due']) ? date('M d, Y', strtotime($card['due'])) : '<span class="text-muted">-</span>'; ?></td>
+                                                                <td>
+                                                                    <?php if (!empty($card['members'])): ?>
+                                                                        <?php foreach ($card['members'] as $member): ?>
+                                                                            <span class="badge bg-secondary me-1"><?php echo h($member['fullName'] ?? $member['username']); ?></span>
+                                                                        <?php endforeach; ?>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">Unassigned</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-white">No open tickets.</p>
+                                        <?php endif; ?>
+
+                                    <?php elseif ($ticketSub === 'awaiting'): ?>
+                                        <h2 class="card-title text-highlight text-white mb-4">Tickets Awaiting Response</h2>
+
+                                        <?php if (isset($trelloError)): ?>
+                                            <div class="alert alert-danger"><?php echo h($trelloError); ?></div>
+                                        <?php endif; ?>
+
+                                        <?php if (!empty($cards)): ?>
+                                            <div class="table-responsive">
+                                                <table class="table-custom">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width: 40px;"></th>
+                                                            <th>Ticket</th>
+                                                            <th>Labels</th>
+                                                            <th>Start Date</th>
+                                                            <th>Due Date</th>
+                                                            <th>Assigned To</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($cards as $card): ?>
+                                                            <tr>
+                                                                <td><i class="fas fa-clock text-warning" style="font-size: 20px;"></i></td>
+                                                                <td>
+                                                                    <a href="javascript:void(0)" onclick="openCardModal('<?php echo h($card['id']); ?>')" class="text-white text-decoration-none">
+                                                                        <?php echo h($card['name']); ?>
+                                                                    </a>
+                                                                </td>
+                                                                <td>
+                                                                    <?php if (!empty($card['labels'])): ?>
+                                                                        <?php foreach ($card['labels'] as $label): ?>
+                                                                            <span class="badge me-1" style="background-color: <?php echo h($label['color']); ?>;">
+                                                                                <?php echo h($label['name'] ?: $label['color']); ?>
+                                                                            </span>
+                                                                        <?php endforeach; ?>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">-</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><?php echo !empty($card['start']) ? date('M d, Y', strtotime($card['start'])) : '<span class="text-muted">-</span>'; ?></td>
+                                                                <td><?php echo !empty($card['due']) ? date('M d, Y', strtotime($card['due'])) : '<span class="text-muted">-</span>'; ?></td>
+                                                                <td>
+                                                                    <?php if (!empty($card['members'])): ?>
+                                                                        <?php foreach ($card['members'] as $member): ?>
+                                                                            <span class="badge bg-secondary me-1"><?php echo h($member['fullName'] ?? $member['username']); ?></span>
+                                                                        <?php endforeach; ?>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">Unassigned</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-white">No tickets awaiting response.</p>
+                                        <?php endif; ?>
+
+                                    <?php elseif ($ticketSub === 'closed'): ?>
+                                        <h2 class="card-title text-highlight text-white mb-4">Closed Support Tickets</h2>
+
+                                        <?php if (isset($trelloError)): ?>
+                                            <div class="alert alert-danger"><?php echo h($trelloError); ?></div>
+                                        <?php endif; ?>
+
+                                        <?php if (!empty($cards)): ?>
+                                            <div class="table-responsive">
+                                                <table class="table-custom">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width: 40px;"></th>
+                                                            <th>Ticket</th>
+                                                            <th>Labels</th>
+                                                            <th>Start Date</th>
+                                                            <th>Due Date</th>
+                                                            <th>Assigned To</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($cards as $card): ?>
+                                                            <tr>
+                                                                <td><i class="fas fa-check-circle text-success" style="font-size: 20px;"></i></td>
+                                                                <td>
+                                                                    <a href="javascript:void(0)" onclick="openCardModal('<?php echo h($card['id']); ?>')" class="text-white text-decoration-none">
+                                                                        <?php echo h($card['name']); ?>
+                                                                    </a>
+                                                                </td>
+                                                                <td>
+                                                                    <?php if (!empty($card['labels'])): ?>
+                                                                        <?php foreach ($card['labels'] as $label): ?>
+                                                                            <span class="badge me-1" style="background-color: <?php echo h($label['color']); ?>;">
+                                                                                <?php echo h($label['name'] ?: $label['color']); ?>
+                                                                            </span>
+                                                                        <?php endforeach; ?>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">-</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><?php echo !empty($card['start']) ? date('M d, Y', strtotime($card['start'])) : '<span class="text-muted">-</span>'; ?></td>
+                                                                <td><?php echo !empty($card['due']) ? date('M d, Y', strtotime($card['due'])) : '<span class="text-muted">-</span>'; ?></td>
+                                                                <td>
+                                                                    <?php if (!empty($card['members'])): ?>
+                                                                        <?php foreach ($card['members'] as $member): ?>
+                                                                            <span class="badge bg-secondary me-1"><?php echo h($member['fullName'] ?? $member['username']); ?></span>
+                                                                        <?php endforeach; ?>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">Unassigned</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-white">No closed tickets.</p>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <?php if ($ticketSub !== 'new'): ?>
+                            <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title text-white" id="cardModalTitle">Loading...</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body" id="cardModalBody">
+                                            <div class="text-center">
+                                                <div class="spinner-border text-primary" role="status"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                function openCardModal(cardId) {
+                                    const modal = new bootstrap.Modal(document.getElementById('cardModal'));
+                                    modal.show();
+
+                                    fetch('?page=tickets&action=get_card&card_id=' + cardId)
+                                        .then(r => r.json())
+                                        .then(data => {
+                                            document.getElementById('cardModalTitle').textContent = data.name;
+                                            let html = '';
+                                            if (data.desc) {
+                                                html += '<div class="mb-3"><h6 class="text-white">Description</h6><p class="text-white" style="white-space: pre-wrap;">' + escapeHtml(data.desc) + '</p></div>';
+                                            }
+                                            if (data.due) {
+                                                html += '<div class="mb-3"><h6 class="text-white">Due Date</h6><p class="text-white">' + new Date(data.due).toLocaleString() + '</p></div>';
+                                            }
+                                            if (data.labels && data.labels.length > 0) {
+                                                html += '<div class="mb-3"><h6 class="text-white">Labels</h6>';
+                                                data.labels.forEach(label => {
+                                                    html += '<span class="badge me-2" style="background-color: ' + label.color + ';">' + escapeHtml(label.name || label.color) + '</span>';
+                                                });
+                                                html += '</div>';
+                                            }
+                                            if (data.attachments && data.attachments.length > 0) {
+                                                html += '<div class="mb-3"><h6 class="text-white">Attachments</h6><ul class="list-unstyled">';
+                                                data.attachments.forEach(att => {
+                                                    html += '<li><a href="' + att.url + '" target="_blank" class="text-primary">' + escapeHtml(att.name) + '</a></li>';
+                                                });
+                                                html += '</ul></div>';
+                                            }
+                                            html += '<a href="' + data.url + '" target="_blank" class="btn btn-primary">Open in Trello</a>';
+                                            document.getElementById('cardModalBody').innerHTML = html;
+                                        });
+                                }
+
+                                function escapeHtml(text) {
+                                    const div = document.createElement('div');
+                                    div.textContent = text;
+                                    return div.innerHTML;
+                                }
+                            </script>
+                        <?php endif; ?>
+
                     <?php elseif ($page === 'admin' && $isSuperuser): ?>
                         <div class="bento-grid">
                             <div class="card full-width p-4">
                                 <div class="card-body">
-                                    <h2 class="card-title text-highlight text-white mb-4">Admin: <?php echo h($subPage === 'quotes' ? 'Manage Quotes' : 'Manage Users'); ?></h2>
+                                    <h2 class="card-title text-highlight text-white mb-4">Admin: <?php echo h($subPage === 'quotes' ? 'Manage Quotes' : ($subPage === 'permissions' ? 'Manage Permissions' : 'Manage Users')); ?></h2>
 
                                     <ul class="nav nav-tabs mb-4">
                                         <li class="nav-item">
-                                            <a class="nav-link <?php echo $subPage !== 'quotes' ? 'active' : ''; ?>" href="?page=admin">Manage Users</a>
+                                            <a class="nav-link <?php echo !$subPage || $subPage === '' ? 'active' : ''; ?>" href="?page=admin">Manage Users</a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link <?php echo $subPage === 'quotes' ? 'active' : ''; ?>" href="?page=admin&sub=quotes">Manage Quotes</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link <?php echo $subPage === 'permissions' ? 'active' : ''; ?>" href="?page=admin&sub=permissions">Manage Permissions</a>
                                         </li>
                                     </ul>
 
@@ -1852,6 +2280,57 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                                                     data-bs-toggle="modal" data-bs-target="#deleteQuoteModal"
                                                                     data-id="<?php echo h($quote['id']); ?>">Delete</button>
                                                             </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    <?php elseif ($subPage === 'permissions'): ?>
+                                        <?php
+                                        $conn = getDbConnection();
+                                        $rolesResult = $conn->query("SELECT * FROM roles ORDER BY role_name");
+                                        $roles = $rolesResult ? $rolesResult->fetch_all(MYSQLI_ASSOC) : [];
+
+                                        $permissionsResult = $conn->query("SELECT * FROM permissions ORDER BY role_name, menu_item");
+                                        $allPermissions = $permissionsResult ? $permissionsResult->fetch_all(MYSQLI_ASSOC) : [];
+                                        $conn->close();
+
+                                        $permissionsByRole = [];
+                                        foreach ($allPermissions as $perm) {
+                                            $permissionsByRole[$perm['role_name']][$perm['menu_item']] = $perm['can_access'];
+                                        }
+
+                                        $menuItems = ['dashboard', 'domains', 'emails', 'ssl', 'billing', 'settings', 'tickets', 'admin'];
+                                        ?>
+                                        <div class="table-responsive">
+                                            <table class="table-custom">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Role</th>
+                                                        <?php foreach ($menuItems as $item): ?>
+                                                            <th><?php echo h(ucfirst($item)); ?></th>
+                                                        <?php endforeach; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($roles as $role): ?>
+                                                        <tr>
+                                                            <td><strong><?php echo h($role['role_label']); ?></strong></td>
+                                                            <?php foreach ($menuItems as $item): ?>
+                                                                <?php $hasAccess = $permissionsByRole[$role['role_name']][$item] ?? 0; ?>
+                                                                <td>
+                                                                    <form method="POST" action="?page=admin&sub=permissions" style="margin: 0;">
+                                                                        <?php csrf_field(); ?>
+                                                                        <input type="hidden" name="update_permission" value="1">
+                                                                        <input type="hidden" name="role_name" value="<?php echo h($role['role_name']); ?>">
+                                                                        <input type="hidden" name="menu_item" value="<?php echo h($item); ?>">
+                                                                        <input type="hidden" name="can_access" value="<?php echo $hasAccess ? '0' : '1'; ?>">
+                                                                        <button type="submit" class="btn btn-sm <?php echo $hasAccess ? 'btn-success' : 'btn-secondary'; ?>" style="min-width: 60px;">
+                                                                            <?php echo $hasAccess ? '✓ Yes' : '✗ No'; ?>
+                                                                        </button>
+                                                                    </form>
+                                                                </td>
+                                                            <?php endforeach; ?>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
@@ -2284,11 +2763,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                     <input type="text" class="form-control" id="domain" name="domain" placeholder="yourdomain.com" required>
                                 </div>
                                 <div class="col-12">
-                                    <label for="username" class="form-label text-white">cPanel Username</label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
-                                <div class="col-12">
-                                    <label for="password" class="form-label text-white">cPanel Password</label>
+                                    <label for="password" class="form-label text-white">Password</label>
                                     <div class="input-group" id="show_hide_password">
                                         <input type="password" class="form-control border-end-0" id="password" name="password" placeholder="Enter Password" required>
                                         <a href="javascript:;" class="input-group-text bg-transparent text-white"><i class="fas fa-eye"></i></a>
@@ -2356,19 +2831,57 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
-            
+
             if (sidebarToggle && sidebar && sidebarOverlay) {
                 sidebarToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('show');
                     sidebarOverlay.classList.toggle('show');
                 });
-                
+
                 sidebarOverlay.addEventListener('click', function() {
                     sidebar.classList.remove('show');
                     sidebarOverlay.classList.remove('show');
                 });
             }
         });
+
+        <?php if ($loggedIn && $isSuperuser): ?>
+        // Ticket notification system
+        let lastTicketIds = [];
+        const notificationSound = new Audio('assets/sounds/ding.wav');
+
+        function checkNewTickets() {
+            fetch('?page=tickets&action=check_tickets')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.ids && Array.isArray(data.ids)) {
+                        if (lastTicketIds.length > 0) {
+                            const newTickets = data.ids.filter(id => !lastTicketIds.includes(id));
+                            if (newTickets.length > 0) {
+                                notificationSound.play().catch(e => console.log('Audio play failed:', e));
+                                if (Notification.permission === 'granted') {
+                                    new Notification('New Support Ticket', {
+                                        body: newTickets.length + ' new ticket(s) opened',
+                                        icon: 'https://dashboard.driftnimbus.com/assets/images/favicon.ico'
+                                    });
+                                }
+                            }
+                        }
+                        lastTicketIds = data.ids;
+                    }
+                })
+                .catch(e => console.log('Ticket check failed:', e));
+        }
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Check every 30 seconds
+        setInterval(checkNewTickets, 30000);
+        checkNewTickets(); // Initial check
+        <?php endif; ?>
     </script>
 
 </body>
