@@ -1,5 +1,19 @@
 <?php
+// -------------------- SESSION SECURITY --------------------
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', 1);
+ini_set('session.cookie_samesite', 'Strict');
+ini_set('session.use_strict_mode', 1);
 session_start();
+
+// -------------------- SECURITY HEADERS --------------------
+header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://code.tidio.co; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' https://placehold.co https://hosting.driftnimbus.com data:; connect-src 'self' https://api.open-meteo.com https://feeds.bbci.co.uk https://news.google.com https://accounts.zoho.com https://www.zohoapis.com https://www.paynow.co.zw; frame-src 'self' https://www.paynow.co.zw;");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: DENY");
+header("X-XSS-Protection: 1; mode=block");
+header("Referrer-Policy: no-referrer-when-downgrade");
+header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+
 
 // -------------------- BOOTSTRAP: Composer + .env --------------------
 require __DIR__ . '/vendor/autoload.php';
@@ -17,7 +31,7 @@ define('DB_PASS', $_ENV['DB_PASS'] ?? '');
 define('DB_NAME', $_ENV['DB_NAME'] ?? '');
 
 // Security toggles
-define('VERIFY_SSL', false); // TODO: set to true in production once CA chain is valid
+define('VERIFY_SSL', true);
 define('CURL_TIMEOUT', 30);
 
 // External APIs
@@ -1361,11 +1375,21 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                             </div>
                                             <div class="mb-3">
                                                 <label for="email_password" class="form-label text-white">Password</label>
-                                                <input type="password" class="form-control" id="email_password" name="email_password" placeholder="Password" required>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="email_password" name="email_password" placeholder="Password" required>
+                                                    <span class="input-group-text bg-transparent text-white toggle-password" data-target="#email_password">
+                                                        <i class="fas fa-eye"></i>
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="email_password_confirm" class="form-label text-white">Confirm Password</label>
-                                                <input type="password" class="form-control" id="email_password_confirm" name="email_password_confirm" placeholder="Confirm Password" required>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="email_password_confirm" name="email_password_confirm" placeholder="Confirm Password" required>
+                                                    <span class="input-group-text bg-transparent text-white toggle-password" data-target="#email_password_confirm">
+                                                        <i class="fas fa-eye"></i>
+                                                    </span>
+                                                </div>
                                             </div>
                                             <button type="submit" class="btn btn-primary w-100">Add Account</button>
                                         </form>
@@ -1552,11 +1576,21 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                             <p class="text-white">Change password for <span class="fw-bold" id="change-password-email-label">unknown email account</span></p>
                                             <div class="mb-3">
                                                 <label for="new_password" class="form-label text-white">New Password</label>
-                                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                                    <span class="input-group-text bg-transparent text-white toggle-password" data-target="#new_password">
+                                                        <i class="fas fa-eye"></i>
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="confirm_password" class="form-label text-white">Confirm Password</label>
-                                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                                    <span class="input-group-text bg-transparent text-white toggle-password" data-target="#confirm_password">
+                                                        <i class="fas fa-eye"></i>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -1928,7 +1962,12 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                             </div>
                                             <div class="mb-3">
                                                 <label for="cpanel_password" class="form-label text-white">cPanel Password</label>
-                                                <input type="password" class="form-control" name="cpanel_password" placeholder="For email notification only">
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="cpanel_password" name="cpanel_password" placeholder="For email notification only">
+                                                    <span class="input-group-text bg-transparent text-white toggle-password" data-target="#cpanel_password">
+                                                        <i class="fas fa-eye"></i>
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="full_name" class="form-label text-white">Full Name</label>
@@ -2289,9 +2328,11 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
                                 </div>
                                 <div class="col-12">
                                     <label for="password" class="form-label text-white">cPanel Password</label>
-                                    <div class="input-group" id="show_hide_password">
-                                        <input type="password" class="form-control border-end-0" id="password" name="password" placeholder="Enter Password" required>
-                                        <a href="javascript:;" class="input-group-text bg-transparent text-white"><i class="fas fa-eye"></i></a>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="password" name="password" placeholder="Enter Password" required>
+                                        <span class="input-group-text bg-transparent text-white toggle-password" data-target="#password">
+                                            <i class="fas fa-eye"></i>
+                                        </span>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -2309,6 +2350,7 @@ if (isset($_SESSION['cpanel_username'], $_SESSION['cpanel_domain'], $_SESSION['c
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="//code.tidio.co/agjwvfyqtdf2zxvwva8yijqjkymuprf1.js" async></script>
+    <script src="assets/js/script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const showHidePassword = document.getElementById('show_hide_password');
