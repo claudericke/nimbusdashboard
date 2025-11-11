@@ -58,12 +58,19 @@ A modern, dark-themed hosting management dashboard for Drift Nimbus customers. B
 
 ## Technical Stack
 
+### Architecture
+- **MVC Pattern** - Model-View-Controller architecture
+- **Clean URLs** - SEO-friendly routing (/dashboard vs ?page=dashboard)
+- **Modular Design** - 50+ organized files vs 1 monolithic file
+- **Separation of Concerns** - Logic, data, and presentation separated
+
 ### Backend
 - PHP 7.4+
 - MySQL database
 - cPanel UAPI with token authentication
 - Zoho Books API v3
 - Composer for dependency management
+- PSR-4 autoloading
 
 ### Frontend
 - Bootstrap 5.3.0
@@ -82,13 +89,25 @@ A modern, dark-themed hosting management dashboard for Drift Nimbus customers. B
 ## File Structure
 ```
 /dashboard
-├── index.php           # Main application file
-├── helpers.php         # CSRF protection helpers
-├── .env               # Environment configuration
-├── composer.json      # PHP dependencies
-├── css/
-│   └── style.css      # Custom styles
-└── vendor/            # Composer packages
+├── index.php           # Router entry point (MVC)
+├── index.legacy.php    # Original monolithic file (backup)
+├── autoload.php        # Class autoloader
+├── /app
+│   ├── Router.php
+│   ├── /Controllers    # Business logic (9 controllers)
+│   ├── /Models         # Database operations (4 models)
+│   ├── /Services       # External APIs (5 services)
+│   └── /Helpers        # Utilities (4 helpers)
+├── /config             # Configuration files
+├── /routes             # Route definitions
+├── /views              # HTML templates (17 views)
+│   ├── /layouts        # Header, sidebar, footer
+│   ├── /auth, /dashboard, /domains, /emails
+│   ├── /ssl, /billing, /settings
+│   ├── /tickets, /admin
+├── /public             # Public assets
+│   ├── /css, /js, /assets
+└── /vendor             # Composer packages
 ```
 
 ## Configuration
