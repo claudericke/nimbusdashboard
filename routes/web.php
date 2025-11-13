@@ -4,7 +4,7 @@
 $router->get('/', 'AuthController@showLogin');
 $router->post('/login', 'AuthController@login');
 $router->get('/logout', 'AuthController@logout');
-$router->post('/switch-domain', 'AuthController@switchDomain');
+$router->get('/switch-domain', 'AuthController@switchDomain');
 
 // Dashboard
 $router->get('/dashboard', 'DashboardController@index');

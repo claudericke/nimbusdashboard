@@ -1,8 +1,8 @@
 RewriteEngine On
 
-# Redirect to public folder for assets
-RewriteCond %{REQUEST_URI} ^/public/
-RewriteRule ^public/(.*)$ public/$1 [L]
+# Handle assets directory
+RewriteCond %{REQUEST_URI} ^/assets/
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 
 # Route all other requests through index.php
 RewriteCond %{REQUEST_FILENAME} !-f

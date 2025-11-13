@@ -8,7 +8,7 @@ class Permission {
     }
 
     public function getByRole($role) {
-        $stmt = $this->db->prepare("SELECT menu_item FROM permissions WHERE role = ? AND can_access = 1");
+        $stmt = $this->db->prepare("SELECT menu_item FROM permissions WHERE role_name = ? AND can_access = 1");
         $stmt->bind_param("s", $role);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -21,7 +21,7 @@ class Permission {
     }
 
     public function canAccess($menuItem, $role) {
-        $stmt = $this->db->prepare("SELECT can_access FROM permissions WHERE role = ? AND menu_item = ?");
+        $stmt = $this->db->prepare("SELECT can_access FROM permissions WHERE role_name = ? AND menu_item = ?");
         $stmt->bind_param("ss", $role, $menuItem);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -30,13 +30,13 @@ class Permission {
     }
 
     public function update($role, $menuItem, $canAccess) {
-        $stmt = $this->db->prepare("UPDATE permissions SET can_access = ? WHERE role = ? AND menu_item = ?");
+        $stmt = $this->db->prepare("UPDATE permissions SET can_access = ? WHERE role_name = ? AND menu_item = ?");
         $stmt->bind_param("iss", $canAccess, $role, $menuItem);
         return $stmt->execute();
     }
 
     public function getAllPermissions() {
-        $result = $this->db->query("SELECT * FROM permissions ORDER BY role, menu_item");
+        $result = $this->db->query("SELECT * FROM permissions ORDER BY role_name, menu_item");
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 }

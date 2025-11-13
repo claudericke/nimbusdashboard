@@ -52,8 +52,8 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
             $userModel = new User();
             $allUsers = $userModel->all();
             foreach ($allUsers as $user) {
-                $selected = ($user['cpanel_domain'] === $domain && $user['cpanel_username'] === $username) ? 'selected' : '';
-                echo '<option value="' . h($user['id']) . '" ' . $selected . '>' . h($user['cpanel_domain']) . ' (' . h($user['cpanel_username']) . ')</option>';
+                $selected = ($user['domain'] === $domain && $user['cpanel_username'] === $username) ? 'selected' : '';
+                echo '<option value="' . h($user['id']) . '" ' . $selected . '>' . h($user['domain']) . ' (' . h($user['cpanel_username']) . ')</option>';
             }
             ?>
         </select>

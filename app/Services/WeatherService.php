@@ -1,9 +1,11 @@
 <?php
 
-class WeatherService {
-    public function getCurrentWeather($latitude = -17.8292, $longitude = 31.0522) {
+class WeatherService
+{
+    public function getCurrentWeather($latitude = -17.8292, $longitude = 31.0522)
+    {
         $url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current_weather=true&timezone=Africa/Harare";
-        
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -14,11 +16,12 @@ class WeatherService {
         return $data['current_weather'] ?? null;
     }
 
-    public function getWeatherIcon($code) {
+    public function getWeatherIcon($code)
+    {
         $icons = [
             0 => 'clear-day.png',
-            1 => 'partly-cloudy-day.png',
-            2 => 'partly-cloudy-day.png',
+            1 => 'partial-cloudy-day.png',
+            2 => 'partial-cloudy-day.png',
             3 => 'cloudy.png',
             45 => 'fog.png',
             48 => 'fog.png',

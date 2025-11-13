@@ -29,19 +29,19 @@
                     </div>
                 </div>
                 
-                <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image:url('/public/assets/images/weather/<?php echo $weatherIcon??'cloudy.jpg'; ?>');background-size:cover;background-position:center">
+                <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image:url('assets/images/weather/cloudy.jpg');background-size:cover;background-position:center">
                     <div class="card-body w-100">
                         <h5 class="card-title text-highlight text-white">Weather</h5>
                         <?php if($weather): ?>
-                        <img src="/public/assets/images/weather/<?php echo h($weatherIcon); ?>" alt="Weather" style="width:80px;height:80px">
-                        <h4 class="mb-0 mt-2 text-white"><?php echo h($weather['temperature_2m']??'N/A'); ?>°C</h4>
+                        <img src="assets/images/weather/<?php echo h($weatherIcon); ?>" alt="Weather" style="width:80px;height:80px">
+                        <h4 class="mb-0 mt-2 text-white"><?php echo h($weather['temperature']??'N/A'); ?>°C</h4>
                         <?php else: ?>
                         <p class="text-white">Weather unavailable</p>
                         <?php endif; ?>
                     </div>
                 </div>
                 
-                <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image:url('/public/assets/images/bg-themes/clock.jpg');background-size:cover;background-position:center">
+                <div class="card p-4 text-center d-flex flex-column align-items-center justify-content-center" style="background-image:url('assets/images/bg-themes/clock.jpg');background-size:cover;background-position:center">
                     <div class="card-body w-100">
                         <h5 class="card-title text-highlight text-white">Current Time</h5>
                         <div class="time-widget text-white" id="time-widget"></div>

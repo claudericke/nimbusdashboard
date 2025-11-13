@@ -15,42 +15,52 @@ class CpanelService {
     }
 
     public function createToken($username, $password) {
-        $url = "https://{$this->host}:{$this->port}/login/?login_only=1";
-        $ch = curl_init($url);
+        $url = "https://{$this->host}:{$this->port}/execute/Tokens/create_token";
+        $query = http_build_query(['label' => 'DriftNimbusDashboard']);
+        $ch = curl_init("{$url}?{$query}");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-        curl_exec($ch);
-        curl_close($ch);
-
-        $url = "https://{$this->host}:{$this->port}/execute/Tokens/create_full_access";
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['name' => 'dashboard_token']));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
+        
+        if ($response === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new Exception('cURL error: ' . $error);
+        }
+        
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         $data = json_decode($response, true);
-        return $data['data']['token'] ?? null;
+        if ($httpCode === 200 && isset($data['status']) && intval($data['status']) === 1) {
+            return $data['data'][0]['token'] ?? null;
+        }
+        return null;
     }
 
     public function uapiCall($module, $function, $params = []) {
+        $domain = Session::getDomain();
         $query = http_build_query($params);
-        $url = "https://{$this->host}:{$this->port}/execute/{$module}/{$function}?{$query}";
+        $url = "https://{$domain}:{$this->port}/execute/{$module}/{$function}?{$query}";
         
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: cpanel {$this->username}:{$this->token}"]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return json_decode($response, true);
+        $data = json_decode($response, true);
+        if ($httpCode !== 200 || !isset($data['status']) || intval($data['status']) !== 1) {
+            throw new Exception('cPanel API Error: ' . ($data['errors'][0] ?? 'Unknown error'));
+        }
+        return $data;
     }
 
     public function getDiskUsage() {

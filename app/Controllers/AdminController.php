@@ -240,7 +240,7 @@ class AdminController extends BaseController {
         // Group by role
         $grouped = [];
         foreach ($permissions as $perm) {
-            $grouped[$perm['role']][] = $perm;
+            $grouped[$perm['role_name']][] = $perm;
         }
 
         $this->view('admin/permissions', ['permissions' => $grouped]);

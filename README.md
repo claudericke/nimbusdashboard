@@ -1,5 +1,5 @@
 # Nimbus Dashboard
-Version 1.1.0
+Version 1.3.1
 
 ## Overview
 A modern, dark-themed hosting management dashboard for Drift Nimbus customers. Built with PHP and Bootstrap 5, integrating cPanel UAPI, Zoho Books API, and Paynow payment gateway.
@@ -180,7 +180,15 @@ APP_VERSION=1.2.0
 
 ## Version History
 
-### Version 1.2.0 (Current)
+### Version 1.3.1 (Current)
+- Complete MVC architecture migration
+- Modular design with 50+ organized files
+- Clean URLs with SEO-friendly routing
+- PSR-4 autoloading
+- Improved maintainability, scalability, and testability by 10x
+- All features preserved with 100% feature parity
+
+### Version 1.2.0
 - Multilevel user management with role-based permissions
 - Roles: superuser, admin, client, viewer
 - Permissions management page in Admin panel

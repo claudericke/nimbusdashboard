@@ -16,7 +16,7 @@ class User {
     }
 
     public function findByDomain($domain) {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE cpanel_domain = ?");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE domain = ?");
         $stmt->bind_param("s", $domain);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -29,15 +29,15 @@ class User {
     }
 
     public function create($data) {
-        $stmt = $this->db->prepare("INSERT INTO users (cpanel_username, cpanel_domain, cpanel_password, cpanel_api_token, profile_name, profile_picture, package_name, is_superuser, user_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $this->db->prepare("INSERT INTO users (cpanel_username, domain, cpanel_password, api_token, full_name, profile_picture_url, package, is_superuser, user_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssssssss", 
             $data['cpanel_username'],
-            $data['cpanel_domain'],
+            $data['domain'],
             $data['cpanel_password'],
-            $data['cpanel_api_token'],
-            $data['profile_name'],
-            $data['profile_picture'],
-            $data['package_name'],
+            $data['api_token'],
+            $data['full_name'],
+            $data['profile_picture_url'],
+            $data['package'],
             $data['is_superuser'],
             $data['user_role']
         );
@@ -45,15 +45,15 @@ class User {
     }
 
     public function update($id, $data) {
-        $stmt = $this->db->prepare("UPDATE users SET cpanel_username = ?, cpanel_domain = ?, cpanel_password = ?, cpanel_api_token = ?, profile_name = ?, profile_picture = ?, package_name = ?, is_superuser = ?, user_role = ? WHERE id = ?");
+        $stmt = $this->db->prepare("UPDATE users SET cpanel_username = ?, domain = ?, cpanel_password = ?, api_token = ?, full_name = ?, profile_picture_url = ?, package = ?, is_superuser = ?, user_role = ? WHERE id = ?");
         $stmt->bind_param("sssssssssi",
             $data['cpanel_username'],
-            $data['cpanel_domain'],
+            $data['domain'],
             $data['cpanel_password'],
-            $data['cpanel_api_token'],
-            $data['profile_name'],
-            $data['profile_picture'],
-            $data['package_name'],
+            $data['api_token'],
+            $data['full_name'],
+            $data['profile_picture_url'],
+            $data['package'],
             $data['is_superuser'],
             $data['user_role'],
             $id
@@ -76,7 +76,7 @@ class User {
     }
 
     public function updateProfile($id, $name, $picture) {
-        $stmt = $this->db->prepare("UPDATE users SET profile_name = ?, profile_picture = ? WHERE id = ?");
+        $stmt = $this->db->prepare("UPDATE users SET full_name = ?, profile_picture_url = ? WHERE id = ?");
         $stmt->bind_param("ssi", $name, $picture, $id);
         return $stmt->execute();
     }

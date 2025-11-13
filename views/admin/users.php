@@ -40,11 +40,11 @@
                                     <tr>
                                         <td><?php echo h($user['id']); ?></td>
                                         <td><?php echo h($user['cpanel_username']); ?></td>
-                                        <td><?php echo h($user['cpanel_domain']); ?></td>
-                                        <td><?php echo h($user['package_name']??'N/A'); ?></td>
+                                        <td><?php echo h($user['domain']); ?></td>
+                                        <td><?php echo h($user['package']??'N/A'); ?></td>
                                         <td><?php echo $user['is_superuser']?'Yes':'No'; ?></td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editUserModal" data-id="<?php echo h($user['id']); ?>" data-username="<?php echo h($user['cpanel_username']); ?>" data-domain="<?php echo h($user['cpanel_domain']); ?>">Edit</button>
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editUserModal" data-id="<?php echo h($user['id']); ?>" data-username="<?php echo h($user['cpanel_username']); ?>" data-domain="<?php echo h($user['domain']); ?>">Edit</button>
                                             <form method="POST" action="/admin/users/delete" style="display:inline">
                                                 <?php echo CSRF::field(); ?>
                                                 <input type="hidden" name="delete_user" value="<?php echo h($user['id']); ?>">
@@ -79,7 +79,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-white">Domain</label>
-                        <input type="text" class="form-control" name="cpanel_domain" required>
+                        <input type="text" class="form-control" name="domain" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-white">Password</label>
@@ -87,11 +87,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-white">Full Name</label>
-                        <input type="text" class="form-control" name="profile_name">
+                        <input type="text" class="form-control" name="full_name">
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-white">Package</label>
-                        <input type="text" class="form-control" name="package_name" value="Solopreneur">
+                        <input type="text" class="form-control" name="package" value="Solopreneur">
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="is_superuser" value="1">
