@@ -83,7 +83,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-white">Password</label>
-                        <input type="password" class="form-control" name="cpanel_password" required>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="cpanel_password" name="cpanel_password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="generate_cpanel_password" title="Generate Password"><i class="fas fa-key"></i></button>
+                            <span class="input-group-text bg-transparent text-white toggle-password" data-target="#cpanel_password"><i class="fas fa-eye"></i></span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-white">Full Name</label>
@@ -106,5 +110,10 @@
         </div>
     </div>
 </div>
+
+<script src="/public/js/password-generator.js"></script>
+<script>
+attachPasswordGenerator('cpanel_password', 'generate_cpanel_password');
+</script>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>

@@ -68,19 +68,22 @@ class TicketController extends BaseController {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->json(['success' => false, 'message' => 'Invalid request'], 400);
+            Session::set('error', 'Invalid request');
+            $this->redirect('/tickets/open');
         }
 
         $cardId = $_POST['card_id'] ?? '';
         
         if (empty($cardId) || !isset($this->lists['Closed Tickets'])) {
-            $this->json(['success' => false, 'message' => 'Invalid card ID'], 400);
+            Session::set('error', 'Invalid card ID');
+            $this->redirect('/tickets/open');
         }
 
         $this->trelloService->moveCard($cardId, $this->lists['Closed Tickets']);
         $this->trelloService->markCardComplete($cardId);
 
-        $this->json(['success' => true, 'message' => 'Ticket closed successfully']);
+        Session::set('success', 'Ticket closed successfully');
+        $this->redirect('/tickets/open');
     }
 
     public function checkNew() {

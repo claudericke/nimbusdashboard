@@ -26,11 +26,7 @@
                                     <?php foreach($tickets as $card): ?>
                                     <tr>
                                         <td>
-                                            <form method="POST" action="/tickets/close" style="margin:0">
-                                                <?php echo CSRF::field(); ?>
-                                                <input type="hidden" name="card_id" value="<?php echo h($card['id']); ?>">
-                                                <input type="checkbox" onchange="this.form.submit()" style="width:20px;height:20px;cursor:pointer">
-                                            </form>
+                                            <input type="checkbox" onclick="confirmClose('<?php echo h($card['id']); ?>','<?php echo h($card['name']); ?>')" style="width:20px;height:20px;cursor:pointer">
                                         </td>
                                         <td><a href="javascript:void(0)" onclick="openCardModal('<?php echo h($card['id']); ?>')" class="text-white text-decoration-none"><?php echo h($card['name']); ?></a></td>
                                         <td>
@@ -82,6 +78,27 @@
     </div>
 </div>
 
+<div class="modal fade" id="closeTicketModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="/tickets/close" class="modal-content">
+            <?php echo CSRF::field(); ?>
+            <input type="hidden" name="card_id" id="close_card_id">
+            <div class="modal-header">
+                <h5 class="modal-title text-white">Close Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-white">Are you sure you want to close this ticket?</p>
+                <p class="text-white fw-bold" id="close_ticket_name"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Close Ticket</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openCardModal(cardId){
     const modal=new bootstrap.Modal(document.getElementById('cardModal'));
@@ -106,6 +123,11 @@ function openCardModal(cardId){
                 document.getElementById('cardModalBody').innerHTML=html;
             }
         });
+}
+function confirmClose(cardId,cardName){
+    document.getElementById('close_card_id').value=cardId;
+    document.getElementById('close_ticket_name').textContent=cardName;
+    new bootstrap.Modal(document.getElementById('closeTicketModal')).show();
 }
 function escapeHtml(text){
     const div=document.createElement('div');

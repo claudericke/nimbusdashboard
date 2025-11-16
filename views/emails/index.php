@@ -80,6 +80,7 @@
                     <label class="form-label text-white">New Password</label>
                     <div class="input-group">
                         <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        <button class="btn btn-outline-secondary" type="button" id="generate_new_password" title="Generate Password"><i class="fas fa-key"></i></button>
                         <span class="input-group-text bg-transparent text-white toggle-password" data-target="#new_password"><i class="fas fa-eye"></i></span>
                     </div>
                 </div>
@@ -112,6 +113,7 @@
     </div>
 </div>
 
+<script src="/public/js/password-generator.js"></script>
 <script>
 document.getElementById('changePasswordModal')?.addEventListener('show.bs.modal',function(e){
     const email=e.relatedTarget.getAttribute('data-email');
@@ -123,6 +125,7 @@ document.getElementById('deleteEmailModal')?.addEventListener('show.bs.modal',fu
     document.getElementById('delete-email').value=email;
     document.getElementById('delete-email-label').textContent=email;
 });
+attachPasswordGenerator('new_password', 'generate_new_password');
 </script>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>
