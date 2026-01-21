@@ -1,26 +1,30 @@
 <?php
 
-class AdminController extends BaseController {
+class AdminController extends BaseController
+{
     private $userModel;
     private $quoteModel;
     private $permissionModel;
     private $cpanelService;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->userModel = new User();
         $this->quoteModel = new Quote();
         $this->permissionModel = new Permission();
         $this->cpanelService = new CpanelService();
     }
 
-    public function users() {
+    public function users()
+    {
         $this->requireSuperuser();
 
         $users = $this->userModel->all();
         $this->view('admin/users', ['users' => $users]);
     }
 
-    public function createUser() {
+    public function createUser()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -30,11 +34,12 @@ class AdminController extends BaseController {
         CSRF::check();
 
         $username = trim($_POST['cpanel_username'] ?? '');
-        $domain = trim($_POST['cpanel_domain'] ?? '');
+        $domain = trim($_POST['domain'] ?? '');
         $password = trim($_POST['cpanel_password'] ?? '');
-        $profileName = trim($_POST['profile_name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $profileName = trim($_POST['full_name'] ?? '');
         $profilePicture = trim($_POST['profile_picture'] ?? '');
-        $packageName = trim($_POST['package_name'] ?? '');
+        $packageName = trim($_POST['package'] ?? 'Solopreneur');
         $isSuperuser = isset($_POST['is_superuser']) ? 1 : 0;
         $userRole = trim($_POST['user_role'] ?? 'client');
 
@@ -53,21 +58,23 @@ class AdminController extends BaseController {
 
         $data = [
             'cpanel_username' => $username,
-            'cpanel_domain' => $domain,
+            'domain' => $domain,
             'cpanel_password' => $password,
-            'cpanel_api_token' => $token,
-            'profile_name' => $profileName,
-            'profile_picture' => $profilePicture,
-            'package_name' => $packageName,
+            'email' => $email,
+            'api_token' => $token,
+            'full_name' => $profileName,
+            'profile_picture_url' => $profilePicture,
+            'package' => $packageName,
             'is_superuser' => $isSuperuser,
             'user_role' => $userRole
         ];
 
         if ($this->userModel->create($data)) {
-            Session::set('success', 'User created successfully');
-            Session::set('new_user_username', $username);
-            Session::set('new_user_password', $password);
-            Session::set('new_user_domain', $domain);
+            // Send Onboarding Email
+            if (!empty($email)) {
+                $this->sendOnboardingEmail($email, $username, $password, $domain);
+            }
+            Session::set('success', 'User created successfully and onboarding email sent.');
         } else {
             Session::set('error', 'Failed to create user');
         }
@@ -75,7 +82,45 @@ class AdminController extends BaseController {
         $this->redirect('/admin/users');
     }
 
-    public function editUser() {
+    private function sendOnboardingEmail($to, $username, $password, $domain)
+    {
+        $template = file_get_contents(__DIR__ . '/../../onboardingEmail.md');
+        $body = str_replace(
+            ['{{username}}', '{{password}}', '{{domainURI}}'],
+            [$username, $password, $domain],
+            $template
+        );
+
+        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+        try {
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = env('SMTP_HOST', 'localhost');
+            $mail->SMTPAuth = true;
+            $mail->Username = env('SMTP_USER');
+            $mail->Password = env('SMTP_PASS');
+            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = env('SMTP_PORT', 587);
+
+            // Recipients
+            $mail->setFrom(env('SMTP_FROM', 'support@driftnimbus.com'), 'Drift Nimbus Support');
+            $mail->addAddress($to);
+
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = 'Welcome to Drift Nimbus - Your digital backbone is live.';
+            $mail->Body = $body;
+
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            // Log error or set session error
+            return false;
+        }
+    }
+
+    public function editUser()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -84,13 +129,14 @@ class AdminController extends BaseController {
 
         CSRF::check();
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = (int) ($_POST['id'] ?? 0);
         $username = trim($_POST['cpanel_username'] ?? '');
         $domain = trim($_POST['cpanel_domain'] ?? '');
         $password = trim($_POST['cpanel_password'] ?? '');
-        $profileName = trim($_POST['profile_name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $profileName = trim($_POST['full_name'] ?? '');
         $profilePicture = trim($_POST['profile_picture'] ?? '');
-        $packageName = trim($_POST['package_name'] ?? '');
+        $packageName = trim($_POST['package'] ?? '');
         $isSuperuser = isset($_POST['is_superuser']) ? 1 : 0;
         $userRole = trim($_POST['user_role'] ?? 'client');
 
@@ -100,7 +146,7 @@ class AdminController extends BaseController {
             $this->redirect('/admin/users');
         }
 
-        $token = $user['cpanel_api_token'];
+        $token = $user['api_token'];
         if ($password !== $user['cpanel_password']) {
             $token = $this->cpanelService->createToken($username, $password);
             if (!$token) {
@@ -111,12 +157,13 @@ class AdminController extends BaseController {
 
         $data = [
             'cpanel_username' => $username,
-            'cpanel_domain' => $domain,
+            'domain' => $domain,
             'cpanel_password' => $password,
-            'cpanel_api_token' => $token,
-            'profile_name' => $profileName,
-            'profile_picture' => $profilePicture,
-            'package_name' => $packageName,
+            'email' => $email,
+            'api_token' => $token,
+            'full_name' => $profileName,
+            'profile_picture_url' => $profilePicture,
+            'package' => $packageName,
             'is_superuser' => $isSuperuser,
             'user_role' => $userRole
         ];
@@ -130,7 +177,8 @@ class AdminController extends BaseController {
         $this->redirect('/admin/users');
     }
 
-    public function deleteUser() {
+    public function deleteUser()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -139,7 +187,7 @@ class AdminController extends BaseController {
 
         CSRF::check();
 
-        $id = (int)($_POST['delete_user'] ?? 0);
+        $id = (int) ($_POST['delete_user'] ?? 0);
 
         if ($this->userModel->delete($id)) {
             Session::set('success', 'User deleted successfully');
@@ -150,7 +198,8 @@ class AdminController extends BaseController {
         $this->redirect('/admin/users');
     }
 
-    public function quotes() {
+    public function quotes()
+    {
         $this->requireSuperuser();
 
         $quotes = $this->quoteModel->all();
@@ -162,7 +211,8 @@ class AdminController extends BaseController {
         ]);
     }
 
-    public function createQuote() {
+    public function createQuote()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -189,7 +239,8 @@ class AdminController extends BaseController {
         $this->redirect('/admin/quotes');
     }
 
-    public function editQuote() {
+    public function editQuote()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -198,7 +249,7 @@ class AdminController extends BaseController {
 
         CSRF::check();
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = (int) ($_POST['id'] ?? 0);
         $text = trim($_POST['quote_text'] ?? '');
         $author = trim($_POST['author'] ?? '');
         $imageUrl = trim($_POST['image_url'] ?? '');
@@ -212,7 +263,8 @@ class AdminController extends BaseController {
         $this->redirect('/admin/quotes');
     }
 
-    public function deleteQuote() {
+    public function deleteQuote()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -221,7 +273,7 @@ class AdminController extends BaseController {
 
         CSRF::check();
 
-        $id = (int)($_POST['delete_quote'] ?? 0);
+        $id = (int) ($_POST['delete_quote'] ?? 0);
 
         if ($this->quoteModel->delete($id)) {
             Session::set('success', 'Quote deleted successfully');
@@ -232,11 +284,12 @@ class AdminController extends BaseController {
         $this->redirect('/admin/quotes');
     }
 
-    public function permissions() {
+    public function permissions()
+    {
         $this->requireSuperuser();
 
         $permissions = $this->permissionModel->getAllPermissions();
-        
+
         // Group by role
         $grouped = [];
         foreach ($permissions as $perm) {
@@ -246,7 +299,8 @@ class AdminController extends BaseController {
         $this->view('admin/permissions', ['permissions' => $grouped]);
     }
 
-    public function updatePermissions() {
+    public function updatePermissions()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

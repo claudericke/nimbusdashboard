@@ -1,12 +1,14 @@
 <?php
 
-class CpanelService {
+class CpanelService
+{
     private $host;
     private $port;
     private $username;
     private $token;
 
-    public function __construct($username = null, $token = null) {
+    public function __construct($username = null, $token = null)
+    {
         $config = require __DIR__ . '/../../config/cpanel.php';
         $this->host = $config['host'];
         $this->port = $config['port'];
@@ -14,8 +16,10 @@ class CpanelService {
         $this->token = $token ?? Session::getApiToken();
     }
 
-    public function createToken($username, $password) {
-        $url = "https://{$this->host}:{$this->port}/execute/Tokens/create_token";
+    public function createToken($username, $password)
+    {
+        $domain = Session::getDomain();
+        $url = "https://cpanel.{$domain}:{$this->port}/execute/Tokens/create_token";
         $query = http_build_query(['label' => 'DriftNimbusDashboard']);
         $ch = curl_init("{$url}?{$query}");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -24,13 +28,13 @@ class CpanelService {
         curl_setopt($ch, CURLOPT_USERPWD, "$username:$password");
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
-        
+
         if ($response === false) {
             $error = curl_error($ch);
             curl_close($ch);
             throw new Exception('cURL error: ' . $error);
         }
-        
+
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
@@ -41,11 +45,12 @@ class CpanelService {
         return null;
     }
 
-    public function uapiCall($module, $function, $params = []) {
+    public function uapiCall($module, $function, $params = [])
+    {
         $domain = Session::getDomain();
         $query = http_build_query($params);
-        $url = "https://{$domain}:{$this->port}/execute/{$module}/{$function}?{$query}";
-        
+        $url = "https://cpanel.{$domain}:{$this->port}/execute/{$module}/{$function}?{$query}";
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -58,20 +63,48 @@ class CpanelService {
 
         $data = json_decode($response, true);
         if ($httpCode !== 200 || !isset($data['status']) || intval($data['status']) !== 1) {
-            throw new Exception('cPanel API Error: ' . ($data['errors'][0] ?? 'Unknown error'));
+            // Log error but don't always throw if we are in a background/dashboard context
+            $error = $data['errors'][0] ?? ($response ?: 'Unknown error');
+            return ['status' => 0, 'errors' => [$error], 'data' => null];
         }
         return $data;
     }
 
-    public function getDiskUsage() {
+    public function whmCall($function, $params = [])
+    {
+        $config = require __DIR__ . '/../../config/cpanel.php';
+        $host = env('WHM_HOST', $config['host']);
+        $user = env('WHM_USER', $this->username);
+        $token = env('WHM_API_KEY', $this->token);
+
+        $params['api.version'] = 1;
+        $query = http_build_query($params);
+        $url = "https://{$host}:2087/json-api/{$function}?{$query}";
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: whm {$user}:{$token}"]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return json_decode($response, true);
+    }
+
+    public function getDiskUsage()
+    {
         return $this->uapiCall('Quota', 'get_quota_info');
     }
 
-    public function getDomains() {
+    public function getDomains()
+    {
         return $this->uapiCall('DomainInfo', 'list_domains');
     }
 
-    public function getEmails($page = 1, $perPage = 10) {
+    public function getEmails($page = 1, $perPage = 10)
+    {
         return $this->uapiCall('Email', 'list_pops_with_disk', [
             'api.paginate' => 1,
             'api.paginate_page' => $page,
@@ -79,7 +112,8 @@ class CpanelService {
         ]);
     }
 
-    public function createEmail($email, $password, $quota = 250) {
+    public function createEmail($email, $password, $quota = 250)
+    {
         return $this->uapiCall('Email', 'add_pop', [
             'email' => $email,
             'password' => $password,
@@ -87,27 +121,48 @@ class CpanelService {
         ]);
     }
 
-    public function changePassword($email, $password) {
+    public function changePassword($email, $password)
+    {
         return $this->uapiCall('Email', 'passwd_pop', [
             'email' => $email,
             'password' => $password
         ]);
     }
 
-    public function deleteEmail($email) {
+    public function deleteEmail($email)
+    {
         return $this->uapiCall('Email', 'delete_pop', ['email' => $email]);
     }
 
-    public function getSslCerts() {
+    public function getSslCerts()
+    {
         return $this->uapiCall('SSL', 'list_certs');
     }
 
-    public function checkServerStatus() {
-        $fp = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
-        if ($fp) {
-            fclose($fp);
-            return true;
+    public function checkServerStatus()
+    {
+        $domain = Session::getDomain();
+        $hosts = ['cpanel.' . $domain, $this->host];
+        foreach ($hosts as $host) {
+            $fp = @fsockopen($host, $this->port, $errno, $errstr, 2);
+            if ($fp) {
+                fclose($fp);
+                return true;
+            }
         }
         return false;
+    }
+
+    /**
+     * Admin: Create a new system user/account
+     */
+    public function createAccount($domain, $user, $pass, $plan)
+    {
+        return $this->whmCall('createacct', [
+            'username' => $user,
+            'domain' => $domain,
+            'plan' => $plan,
+            'password' => $pass
+        ]);
     }
 }

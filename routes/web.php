@@ -28,6 +28,7 @@ $router->get('/billing', 'BillingController@index');
 // Settings
 $router->get('/settings', 'SettingsController@index');
 $router->post('/settings/update', 'SettingsController@update');
+$router->post('/settings/upload-avatar', 'SettingsController@uploadAvatar');
 
 // Tickets (Superuser only)
 $router->get('/tickets/new', 'TicketController@newTickets');

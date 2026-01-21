@@ -1,13 +1,16 @@
 <?php
 
-class SettingsController extends BaseController {
+class SettingsController extends BaseController
+{
     private $userModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->userModel = new User();
     }
 
-    public function index() {
+    public function index()
+    {
         $this->requireAuth();
 
         $domain = Session::getDomain();
@@ -20,7 +23,8 @@ class SettingsController extends BaseController {
         ]);
     }
 
-    public function update() {
+    public function update()
+    {
         $this->requireAuth();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -54,5 +58,65 @@ class SettingsController extends BaseController {
         }
 
         $this->redirect('/settings');
+    }
+
+    public function uploadAvatar()
+    {
+        header('Content-Type: application/json');
+        $this->requireAuth();
+        CSRF::check();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $imageData = $input['image'] ?? null;
+
+        if (!$imageData) {
+            echo json_encode(['success' => false, 'error' => 'No image data received']);
+            return;
+        }
+
+        // Validate base64 format and extract data
+        if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
+            $imageData = substr($imageData, strpos($imageData, ',') + 1);
+            $type = strtolower($type[1]); // png, jpg, etc
+
+            if (!in_array($type, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                echo json_encode(['success' => false, 'error' => 'Invalid image type']);
+                return;
+            }
+
+            $imageData = base64_decode($imageData);
+
+            if ($imageData === false) {
+                echo json_encode(['success' => false, 'error' => 'Base64 decode failed']);
+                return;
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Invalid image data format']);
+            return;
+        }
+
+        $userId = Session::get('user_id');
+        $filename = 'avatar_' . $userId . '_' . time() . '.png';
+        $path = __DIR__ . '/../../public/uploads/avatars/' . $filename;
+
+        // Ensure directory exists
+        if (!is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        if (file_put_contents($path, $imageData)) {
+            $url = '/public/uploads/avatars/' . $filename;
+
+            // Update database
+            $user = $this->userModel->find($userId);
+            if ($this->userModel->updateProfile($userId, $user['full_name'], $url)) {
+                Session::set('profile_picture', $url);
+                echo json_encode(['success' => true, 'url' => $url]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Failed to update database']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to save file']);
+        }
     }
 }

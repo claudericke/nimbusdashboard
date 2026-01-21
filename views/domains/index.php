@@ -4,41 +4,49 @@
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
-            <br>
             <div class="bento-grid">
-                <div class="card full-width p-4">
-                    <div class="card-body">
-                        <h2 class="card-title text-white mb-4">Domains</h2>
-                        <div class="table-responsive">
-                            <table class="table-custom">
-                                <thead>
+                <div class="card-graphic full-width reveal-up">
+                    <span class="label-graphic">Infrastructure</span>
+                    <h2 class="mb-4">Domains</h2>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Domain Name <span class="sort-icon"></span></th>
+                                    <th>Type <span class="sort-icon"></span></th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($mainDomain)): ?>
                                     <tr>
-                                        <th>Domain</th>
-                                        <th>Actions</th>
+                                        <td class="fw-bold"><?php echo h($mainDomain); ?></td>
+                                        <td><span class="badge-graphic text-accent-indigo">Primary</span></td>
+                                        <td><a href="https://cpanel.<?php echo h($mainDomain); ?>" target="_blank"
+                                                class="btn btn-sm btn-complete-graphic">EDIT CPANEL <i
+                                                    class="fas fa-external-link-alt ms-1"></i></a></td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if(!empty($mainDomain)): ?>
+                                <?php endif; ?>
+                                <?php foreach ($subdomains as $domain_item): ?>
                                     <tr>
-                                        <td><?php echo h($mainDomain); ?></td>
-                                        <td><a href="https://cpanel.<?php echo h($mainDomain); ?>" target="_blank" class="btn btn-sm btn-primary me-2">Edit in cPanel <i class="fas fa-external-link-alt"></i></a></td>
+                                        <td><?php echo h($domain_item); ?></td>
+                                        <td><span class="badge-graphic text-secondary">Subdomain</span></td>
+                                        <td><a href="https://cpanel.<?php echo h($domain_item); ?>" target="_blank"
+                                                class="btn btn-sm btn-complete-graphic">EDIT CPANEL <i
+                                                    class="fas fa-external-link-alt ms-1"></i></a></td>
                                     </tr>
-                                    <?php endif; ?>
-                                    <?php foreach($subdomains as $domain): ?>
+                                <?php endforeach; ?>
+                                <?php foreach ($addonDomains as $domain_item): ?>
                                     <tr>
-                                        <td><?php echo h($domain); ?></td>
-                                        <td><a href="https://cpanel.<?php echo h($domain); ?>" target="_blank" class="btn btn-sm btn-primary me-2">Edit in cPanel <i class="fas fa-external-link-alt"></i></a></td>
+                                        <td><?php echo h($domain_item); ?></td>
+                                        <td><span class="badge-graphic text-accent-purple">Addon</span></td>
+                                        <td><a href="https://cpanel.<?php echo h($domain_item); ?>" target="_blank"
+                                                class="btn btn-sm btn-complete-graphic">EDIT CPANEL <i
+                                                    class="fas fa-external-link-alt ms-1"></i></a></td>
                                     </tr>
-                                    <?php endforeach; ?>
-                                    <?php foreach($addonDomains as $domain): ?>
-                                    <tr>
-                                        <td><?php echo h($domain); ?></td>
-                                        <td><a href="https://cpanel.<?php echo h($domain); ?>" target="_blank" class="btn btn-sm btn-primary me-2">Edit in cPanel <i class="fas fa-external-link-alt"></i></a></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

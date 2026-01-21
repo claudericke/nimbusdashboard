@@ -132,13 +132,39 @@ class AuthController extends BaseController {
             $isSuperuser = Session::get('is_superuser');
             $userRole = Session::get('user_role');
             
+            // Temporarily set session to test token
             Session::set('cpanel_username', $user['cpanel_username']);
             Session::set('cpanel_domain', $user['domain']);
             Session::set('cpanel_api_token', $user['api_token']);
+            
+            // Test if token is valid
+            $cpanelService = new CpanelService();
+            try {
+                $cpanelService->getDiskUsage();
+            } catch (Exception $e) {
+                // Token invalid, regenerate using password
+                if (!empty($user['cpanel_password'])) {
+                    $newToken = $cpanelService->createToken($user['cpanel_username'], $user['cpanel_password']);
+                    if ($newToken) {
+                        $this->userModel->update($userId, [
+                            'cpanel_username' => $user['cpanel_username'],
+                            'domain' => $user['domain'],
+                            'cpanel_password' => $user['cpanel_password'],
+                            'api_token' => $newToken,
+                            'full_name' => $user['full_name'],
+                            'profile_picture_url' => $user['profile_picture_url'],
+                            'package' => $user['package'],
+                            'is_superuser' => $user['is_superuser'],
+                            'user_role' => $user['user_role']
+                        ]);
+                        Session::set('cpanel_api_token', $newToken);
+                    }
+                }
+            }
+            
             Session::set('profile_name', $user['full_name']);
             Session::set('profile_picture', $user['profile_picture_url']);
             Session::set('package_name', $user['package']);
-            
             Session::set('is_superuser', $isSuperuser);
             Session::set('user_role', $userRole);
         }

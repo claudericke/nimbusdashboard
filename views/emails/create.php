@@ -5,38 +5,44 @@
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
             <br>
-            <?php if(Session::has('success')): ?>
-            <div class="alert alert-success alert-dismissible fade show">
-                <?php echo h(Session::get('success')); Session::remove('success'); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <?php if (Session::has('success')): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <?php echo h(Session::get('success'));
+                    Session::remove('success'); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
-            <?php if(Session::has('error')): ?>
-            <div class="alert alert-danger alert-dismissible fade show">
-                <?php echo h(Session::get('error')); Session::remove('error'); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <?php if (Session::has('error')): ?>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <?php echo h(Session::get('error'));
+                    Session::remove('error'); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
-            
+
             <div class="bento-grid">
-                <div class="card wide p-4">
+                <div class="card full-width p-4">
                     <div class="card-body">
-                        <h2 class="card-title text-highlight text-white mb-4">Add Email Account</h2>
+                        <h2 class="card-title text-accent h3 mb-4 font-syne">Add Email Account</h2>
                         <form method="POST" action="/emails/store">
                             <?php echo CSRF::field(); ?>
                             <div class="mb-3">
                                 <label class="form-label text-white">Username</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="email" placeholder="username" required>
+                                    <input type="text" class="form-control" name="email" placeholder="username"
+                                        required>
                                     <span class="input-group-text">@<?php echo h(Session::getDomain()); ?></span>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label text-white">Password</label>
                                 <div class="input-group">
-                                    <input type="password" class="form-control" id="email_password" name="password" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="generate_email_password" title="Generate Password"><i class="fas fa-key"></i></button>
-                                    <span class="input-group-text bg-transparent text-white toggle-password" data-target="#email_password"><i class="fas fa-eye"></i></span>
+                                    <input type="password" class="form-control" id="email_password" name="password"
+                                        required>
+                                    <button class="btn btn-outline-secondary" type="button" id="generate_email_password"
+                                        title="Generate Password"><i class="fas fa-key"></i></button>
+                                    <span class="input-group-text bg-transparent text-white toggle-password"
+                                        data-target="#email_password"><i class="fas fa-eye"></i></span>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -54,7 +60,7 @@
 
 <script src="/public/js/password-generator.js"></script>
 <script>
-attachPasswordGenerator('email_password', 'generate_email_password');
+    attachPasswordGenerator('email_password', 'generate_email_password');
 </script>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>

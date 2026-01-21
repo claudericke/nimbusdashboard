@@ -19,31 +19,31 @@ class WeatherService
     public function getWeatherIcon($code)
     {
         $icons = [
-            0 => 'clear-day.png',
+            0 => 'sunny.png',
             1 => 'partial-cloudy-day.png',
             2 => 'partial-cloudy-day.png',
             3 => 'cloudy.png',
-            45 => 'fog.png',
-            48 => 'fog.png',
-            51 => 'drizzle.png',
-            53 => 'drizzle.png',
-            55 => 'drizzle.png',
+            45 => 'cloudy.png',
+            48 => 'cloudy.png',
+            51 => 'light-showers.png',
+            53 => 'light-showers.png',
+            55 => 'light-showers.png',
             61 => 'rain.png',
             63 => 'rain.png',
             65 => 'rain.png',
-            71 => 'snow.png',
-            73 => 'snow.png',
-            75 => 'snow.png',
-            77 => 'snow.png',
-            80 => 'rain.png',
-            81 => 'rain.png',
+            71 => 'rain.png',
+            73 => 'rain.png',
+            75 => 'rain.png',
+            77 => 'rain.png',
+            80 => 'light-showers.png',
+            81 => 'light-showers.png',
             82 => 'rain.png',
-            85 => 'snow.png',
-            86 => 'snow.png',
-            95 => 'thunderstorm.png',
-            96 => 'thunderstorm.png',
-            99 => 'thunderstorm.png'
+            85 => 'rain.png',
+            86 => 'rain.png',
+            95 => 'thunderstorms.png',
+            96 => 'thunderstorms.png',
+            99 => 'thunderstorms.png'
         ];
-        return $icons[$code] ?? 'clear-day.png';
+        return '/public/assets/images/weather/' . ($icons[$code] ?? 'sunny.png');
     }
 }

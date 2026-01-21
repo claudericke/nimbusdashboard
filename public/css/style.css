@@ -1,21 +1,48 @@
 :root {
-    --primary-bg: #171420;
-    --secondary-bg: #2B2636;
-    --border-color: rgba(255, 255, 255, 0.1);
+    /* Vibrant Base Colors */
+    --bg-main: #06070a;
+    --bg-card: #11141d;
+    --border-main: rgba(255, 255, 255, 0.08);
     --text-primary: #ffffff;
-    --text-secondary: #9694E7;
-    --highlight-color: #5F65F4;
-    --accent-color: #9694E7;
-    --ssl-green: #28a745;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    /* Graphic Accents & Gradients */
+    --accent-indigo: #6366f1;
+    --accent-purple: #a855f7;
+    --accent-emerald: #10b981;
+    --accent-teal: #14b8a6;
+    --accent-rose: #f43f5e;
+    --accent-amber: #f59e0b;
+    --accent-cyan: #06b6d4;
+
+    /* Gradients */
+    --grad-indigo: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --grad-emerald: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+    --grad-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
+    --grad-amber: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --grad-dark: linear-gradient(135deg, #1e293b 0%, #111827 100%);
+
+    /* Shadows & Glows */
+    --shadow-graphic: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    --glow-accent: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="light"] {
+    --bg-main: #f1f5f9;
+    --bg-card: #ffffff;
+    --border-main: rgba(0, 0, 0, 0.1);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
 }
 
 body {
     font-family: 'Lexend', sans-serif;
-    background: url(https://dashboard.driftnimbus.com/assets/images/bg-themes/body-background-1.webp);
+    background-color: var(--bg-main);
     color: var(--text-primary);
+    margin: 0;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
 }
 
 h1,
@@ -25,64 +52,156 @@ h4,
 h5,
 h6 {
     font-family: 'Syne', sans-serif;
-    color: #fff;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary) !important;
 }
 
+/* Global Contrast Fixes */
+label,
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.text-white {
+    color: var(--text-primary) !important;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Graphic Container Improvements */
 .container-fluid {
-    max-width: 1400px;
+    width: 100% !important;
+    max-width: 1440px !important;
+    margin: 0 auto !important;
+    padding: 2.5rem !important;
 }
 
-.card {
-    background-color: #2B2636;
-    background-size: cover;
+/* Vibrant Graphic Card Base */
+.card-graphic {
+    background: var(--bg-card);
+    border: 1px solid var(--border-main);
     border-radius: 1.5rem;
-    border: 1px solid var(--border-color);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.75rem;
     position: relative;
-    /* Ensure children are positioned correctly */
     overflow: hidden;
-    /* Prevent background from bleeding out of rounded corners */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-graphic);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 160px;
+    /* Reduced from 180px */
+    gap: 0.75rem;
+    /* Replaces need for mt-auto in many cases */
 }
 
-.grad_bg {
-    background-image: url('https://dashboard.driftnimbus.com/assets/images/bg-themes/cardbg.jpg');
-}
-
-.card:hover {
+.card-graphic:hover {
     transform: translateY(-5px);
-    box-shadow: 0 0 15px var(--highlight-color);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* Define specific background positions for each card */
-.card:nth-child(1) {
-    background-position: 0% 10%;
+/* Universal Listing Table Styling */
+.table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text-primary);
 }
 
-.card:nth-child(2) {
-    background-position: 20% 30%;
+.table-custom th {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    font-family: 'Syne', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-main);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
 }
 
-.card:nth-child(3) {
-    background-position: 40% 50%;
+.table-custom th:hover {
+    color: var(--text-primary);
 }
 
-.card:nth-child(4) {
-    background-position: 60% 70%;
+.table-custom td {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-main);
+    vertical-align: middle;
 }
 
-.card:nth-child(5) {
-    background-position: 80% 90%;
+.table-custom tr:last-child td {
+    border-bottom: none;
 }
 
-/* Add a new class for a different background */
-.card-bg2 {
-    background-image: url('https://dashboard.driftnimbus.com/assets/images/bg-themes/cardbg2.jpg');
+.table-custom tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
 }
 
+/* Sorting Icons */
+.sort-icon {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    opacity: 0.3;
+}
+
+th.sort-asc .sort-icon::after {
+    content: ' \f0de';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    opacity: 1;
+}
+
+th.sort-desc .sort-icon::after {
+    content: ' \f0dd';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    opacity: 1;
+}
+
+/* Sidebar Active State */
+.sidebar .nav-link {
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link.active {
+    color: var(--accent-purple) !important;
+    background: rgba(168, 85, 247, 0.1);
+    border-left: 4px solid var(--accent-purple);
+    font-weight: 700;
+}
+
+/* Specific Component Updates */
+.btn-complete-graphic {
+    background: var(--grad-emerald);
+    color: white !important;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-complete-graphic:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Bento Layout */
 .bento-grid {
     display: grid;
-    gap: 1.5rem;
+    gap: 2rem;
     grid-template-columns: repeat(1, 1fr);
 }
 
@@ -90,192 +209,234 @@ h6 {
     .bento-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .span-2 {
+        grid-column: span 2;
+    }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 1280px) {
     .bento-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 
-    .bento-grid .card.wide {
-        grid-column: span 2;
+    .span-3 {
+        grid-column: span 3;
     }
 
-    .bento-grid .card.full-width {
+    .full-width {
         grid-column: 1 / -1;
     }
 }
 
-.header-section {
+/* Typography Hierarchy Refinement */
+.label-graphic {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    /* Reduced from 1.25rem */
+    display: block;
+    opacity: 0.8;
+}
+
+.heading-graphic {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: white !important;
+}
+
+.subheading-graphic {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Listing Components */
+.listing-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.listing-item-graphic {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-main);
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
 }
 
-.navbar-top {
-    background: var(--secondary-bg);
-    border-bottom: 1px solid var(--border-color);
+.listing-item-graphic:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(5px);
 }
 
-.navbar-brand {
-    color: var(--text-primary);
+/* Weather Specifics */
+.weather-graphic {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 0.5rem;
 }
 
-.nav-link.active,
-.nav-link:hover {
-    color: var(--highlight-color) !important;
+.weather-icon-large {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
 }
 
-.btn-primary {
-    background-color: var(--highlight-color);
-    border-color: var(--highlight-color);
+/* Gradient Utility Fixes */
+.bg-vibrant-indigo {
+    background: var(--grad-indigo);
+    color: white !important;
 }
 
-.btn-primary:hover {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
+.bg-vibrant-emerald {
+    background: var(--grad-emerald);
+    color: white !important;
 }
 
-.btn-outline-secondary {
-    color: var(--text-secondary);
-    border-color: var(--border-color);
+.bg-vibrant-rose {
+    background: var(--grad-rose);
+    color: white !important;
 }
 
-.text-highlight {
-    color: var(--highlight-color);
+.bg-vibrant-dark {
+    background: var(--grad-dark);
 }
 
-.text-accent {
-    color: var(--accent-color);
+/* Animations */
+.reveal-up {
+    animation: revealUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
 }
 
+@keyframes revealUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.reveal-grid>*:nth-child(n) {
+    animation: revealUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+}
+
+.reveal-grid>*:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.reveal-grid>*:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.reveal-grid>*:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.reveal-grid>*:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.reveal-grid>*:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.reveal-grid>*:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+.reveal-grid>*:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.reveal-grid>*:nth-child(8) {
+    animation-delay: 0.4s;
+}
+
+/* Dashboard Clock */
+.time-display-graphic {
+    font-family: 'Syne', sans-serif;
+    font-size: 4.5rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+    margin-bottom: 0.5rem;
+    background: var(--grad-indigo);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Progress Bars */
+.progress-graphic {
+    height: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 100px;
+    overflow: hidden;
+    margin: 1rem 0;
+    /* Reduced from 1.5rem */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-graphic-bar {
+    height: 100%;
+    border-radius: 100px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* General Link Styling */
+a {
+    color: var(--accent-indigo);
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--accent-purple);
+}
+
+.text-decoration-none {
+    text-decoration: none !important;
+}
+
+/* Form Controls */
 .form-control {
-    background-color: #fff;
-    border: 1px solid #ccc;
-    color: #000;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-main) !important;
+    color: var(--text-primary) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
 }
 
 .form-control:focus {
-    background-color: #fff;
-    border-color: var(--highlight-color);
-    box-shadow: 0 0 0 0.25rem rgba(95, 101, 244, 0.25);
-    color: #000;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: var(--accent-indigo) !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+}
+
+::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.5;
 }
 
 .form-control::placeholder {
-    color: #6c757d;
-}
-
-.table-custom {
-    width: 100%;
-    border-collapse: collapse;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    background-color: transparent;
-}
-
-.table-custom th,
-.table-custom td {
-    padding: 15px;
-    background-color: transparent;
-    color: #fff;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.table-custom th {
-    text-align: left;
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.table-custom tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.modal-content {
-    background-color: var(--secondary-bg);
-    color: var(--text-primary);
-}
-
-.table-responsive {
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.welcome-image {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    border-radius: 1rem;
-    margin-top: 1rem;
-}
-
-/* New Styles for Bentos */
-.bento-card {
-    background-color: #2D2D2D;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.bento-card-full {
-    grid-column: 1 / -1;
-}
-
-.bento-grid-login {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: 100vh;
-}
-
-.login-card {
-    background-color: #1a1a1a;
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.login-img-col {
-    background-image: url('https://dashboard.driftnimbus.com/assets/images/auth/nimbus-woman-1.jpg');
-    background-size: cover;
-    background-position: center;
-}
-
-.weather-icon {
-    width: 50px;
-    height: 50px;
-}
-
-.time-widget {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-.quote-card {
-    position: relative;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #fff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.quote-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    content: "";
-}
-
-.quote-content {
-    position: relative;
-    z-index: 1;
+    color: var(--text-muted) !important;
 }
