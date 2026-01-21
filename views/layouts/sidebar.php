@@ -65,10 +65,17 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
     }
 
     .sidebar-nav-link.active {
-        background: var(--grad-indigo);
+        background: rgba(255, 255, 255, 0.05);
         color: #ffffff !important;
         font-weight: 700;
-        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        border-radius: 0 1rem 1rem 0;
+        margin-left: -2rem;
+        padding-left: 3.25rem;
+        border-left: 4px solid var(--accent-indigo);
+    }
+
+    .sidebar-nav-link.active i {
+        color: var(--accent-indigo);
     }
 
     .sidebar-nav-link i {
@@ -209,16 +216,114 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
         color: white;
         font-size: 0.85rem;
     }
+
+    /* Notification Bell & Modal Styles */
+    .notification-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-left: 1rem;
+    }
+
+    .notification-bell {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-main);
+        color: #fff;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .notification-bell:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.05);
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: var(--accent-rose);
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        border: 2px solid #0b0d12;
+        display: none;
+    }
+
+    .mission-log-modal .modal-content {
+        background: #11141d;
+        border: 1px solid var(--border-main);
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .notification-item {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-main);
+        transition: background 0.2s;
+        cursor: default;
+    }
+
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+
+    .notification-item.unread {
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .notification-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .notif-type {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+
+    .notif-msg {
+        color: #fff;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .notif-time {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
 </style>
 
 <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
+    <div class="sidebar-logo d-flex align-items-center justify-content-between">
         <a href="/dashboard">
             <img src="https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg"
-                alt="Drift Nimbus" style="width:100%;max-width:180px">
+                alt="Drift Nimbus" style="width:100%;max-width:160px">
         </a>
+        <div class="notification-wrapper">
+            <div class="notification-bell" id="notificationBellTrigger" data-bs-toggle="modal"
+                data-bs-target="#notificationModal">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
+            </div>
+        </div>
     </div>
 
     <?php if ($isSuperuser): ?>
@@ -328,3 +433,96 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
         </li>
     </ul>
 </aside>
+
+<!-- Notification Modal -->
+<div class="modal fade mission-log-modal" id="notificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title text-white fw-bold">Mission Activity Log</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 mt-3" style="max-height: 400px; overflow-y: auto;" id="notificationList">
+                <div class="p-5 text-center text-muted">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Syncing logs...
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3">
+                <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted w-100"
+                    id="markAllRead">Mark all as seen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const badge = document.getElementById('notificationBadge');
+        const list = document.getElementById('notificationList');
+        const markAllBtn = document.getElementById('markAllRead');
+
+        async function fetchNotifications() {
+            try {
+                const response = await fetch('/notifications/latest');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update Badge
+                    const count = parseInt(data.unread_count);
+                    if (count > 0) {
+                        badge.innerText = count > 9 ? '9+' : count;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+
+                    // Update List
+                    if (data.notifications.length === 0) {
+                        list.innerHTML = '<div class="p-5 text-center text-muted opacity-50">No recent activity detected.</div>';
+                    } else {
+                        list.innerHTML = data.notifications.map(n => `
+                        <div class="notification-item ${n.is_read == 0 ? 'unread' : ''}">
+                            <div class="notif-type text-${n.type === 'error' ? 'danger' : (n.type === 'success' ? 'success' : 'info')}">${n.type}</div>
+                            <div class="notif-msg">${n.message}</div>
+                            <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync notifications:', error);
+            }
+        }
+
+        // Initial fetch
+        fetchNotifications();
+
+        // Refresh every 30 seconds
+        setInterval(fetchNotifications, 30000);
+
+        // Mark as read
+        markAllBtn.addEventListener('click', async function () {
+            const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+            const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
+
+            try {
+                const response = await fetch('/notifications/read-all', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    fetchNotifications();
+                }
+            } catch (error) {
+                console.error('Failed to clear notifications:', error);
+            }
+        });
+
+        // Re-fetch when modal opens
+        document.getElementById('notificationModal').addEventListener('show.bs.modal', fetchNotifications);
+    });
+</script>

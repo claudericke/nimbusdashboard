@@ -51,3 +51,15 @@ function formatTicketName($name)
     }
     return $name;
 }
+
+/**
+ * Add a global notification
+ */
+function addNotification($type, $message, $userId = null)
+{
+    if (!$userId) {
+        $userId = Session::get('user_id');
+    }
+    $notification = new Notification();
+    return $notification->add($type, $message, $userId);
+}

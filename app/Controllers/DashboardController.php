@@ -38,12 +38,34 @@ class DashboardController extends BaseController
         $invoices = $zohoService->getInvoices(Session::getDomain());
 
         // Normalize Disk Usage (Resilient check for list or assoc array)
-        $normalizedDisk = null;
+        $normalizedDisk = [
+            'used' => 0,
+            'limit' => 0,
+            'percentage' => 0
+        ];
+
         if (isset($diskData['data']) && !empty($diskData['data'])) {
-            if (is_array($diskData['data'])) {
-                // If it's a list, get the first one. If it's an assoc array, get the first element.
-                $normalizedDisk = reset($diskData['data']);
+            $raw = is_array($diskData['data']) ? reset($diskData['data']) : $diskData['data'];
+
+            // Map keys from cPanel UAPI Quota::get_quota_info or StatsBar::get_stats
+            $used = $raw['megabytes_used'] ?? $raw['usage'] ?? $raw['used'] ?? 0;
+            $limit = $raw['megabytes_limit'] ?? $raw['limit'] ?? 0;
+
+            // Handle "unlimited" or 0 as unlimited
+            if ($limit === 'unlimited' || (int) $limit === 0) {
+                $limit = 0;
+            } else {
+                $limit = (int) $limit;
             }
+
+            $used = (int) $used;
+            $percentage = ($limit > 0) ? round(($used / $limit) * 100) : 0;
+
+            $normalizedDisk = [
+                'used' => $used,
+                'limit' => $limit,
+                'percentage' => $percentage
+            ];
         }
 
         $data = [

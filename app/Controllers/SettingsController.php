@@ -53,6 +53,7 @@ class SettingsController extends BaseController
             Session::set('profile_name', $profileName);
             Session::set('profile_picture', $profilePicture);
             Session::set('success', 'Profile updated successfully');
+            addNotification('success', "Profile information updated: {$profileName}");
         } else {
             Session::set('error', 'Failed to update profile');
         }
@@ -111,6 +112,7 @@ class SettingsController extends BaseController
             $user = $this->userModel->find($userId);
             if ($this->userModel->updateProfile($userId, $user['full_name'], $url)) {
                 Session::set('profile_picture', $url);
+                addNotification('success', "Profile picture updated successfully.");
                 echo json_encode(['success' => true, 'url' => $url]);
             } else {
                 echo json_encode(['success' => false, 'error' => 'Failed to update database']);

@@ -94,6 +94,7 @@ class TicketController extends BaseController
         $this->trelloService->markCardComplete($cardId);
 
         Session::set('success', "Mission accomplished: '{$ticketName}' has been resolved.");
+        addNotification('success', "Mission accomplished: '{$ticketName}' has been resolved.");
 
         $referer = $_SERVER['HTTP_REFERER'] ?? '/tickets/open';
         $this->redirect($referer);
@@ -115,6 +116,8 @@ class TicketController extends BaseController
                         'id' => $ticket['id'],
                         'name' => $ticket['name']
                     ];
+                    $tName = formatTicketName($ticket['name']);
+                    addNotification('info', "New Mission detected: {$tName}", null);
                 }
             }
 

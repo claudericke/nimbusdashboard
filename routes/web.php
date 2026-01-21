@@ -52,3 +52,7 @@ $router->post('/admin/quotes/delete', 'AdminController@deleteQuote');
 
 $router->get('/admin/permissions', 'AdminController@permissions');
 $router->post('/admin/permissions/update', 'AdminController@updatePermissions');
+
+// Notifications
+$router->get('/notifications/latest', 'NotificationController@latest');
+$router->post('/notifications/read-all', 'NotificationController@markRead');

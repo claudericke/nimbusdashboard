@@ -75,6 +75,7 @@ class AdminController extends BaseController
                 $this->sendOnboardingEmail($email, $username, $password, $domain);
             }
             Session::set('success', 'User created successfully and onboarding email sent.');
+            addNotification('success', "New user account created for node: {$domain}");
         } else {
             Session::set('error', 'Failed to create user');
         }
@@ -318,6 +319,7 @@ class AdminController extends BaseController
         }
 
         Session::set('success', 'Permissions updated successfully');
+        addNotification('warning', "Global user permissions have been updated.");
         $this->redirect('/admin/permissions');
     }
 }

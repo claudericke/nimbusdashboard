@@ -235,11 +235,10 @@ th.sort-desc .sort-icon::after {
     text-transform: uppercase;
     letter-spacing: 0.15em;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: white !important;
     margin-bottom: 0.5rem;
-    /* Reduced from 1.25rem */
     display: block;
-    opacity: 0.8;
+    opacity: 1;
 }
 
 .heading-graphic {
@@ -254,9 +253,10 @@ th.sort-desc .sort-icon::after {
 .subheading-graphic {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: white !important;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+    opacity: 0.8;
 }
 
 /* Listing Components */

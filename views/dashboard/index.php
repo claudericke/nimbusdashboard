@@ -64,11 +64,14 @@
                 <div class="card-graphic bg-vibrant-dark reveal-up">
                     <span class="label-graphic">Cloud Vault</span>
                     <?php
-                    $limit = isset($diskUsage['megabytes_limit']) ? (int) $diskUsage['megabytes_limit'] : 0;
-                    $used = isset($diskUsage['megabytes_used']) ? (int) $diskUsage['megabytes_used'] : 0;
-                    if ($limit > 0 || $used > 0): ?>
+                    $limit = $diskUsage['limit'] ?? 0;
+                    $used = $diskUsage['used'] ?? 0;
+                    $percentage = $diskUsage['percentage'] ?? 0;
+
+                    // Show widget if we have any data (even 0 used)
+                    // If both are 0, we might still be awaiting sync or it's a fresh account
+                    if ($limit > 0 || $used > 0 || (isset($diskUsage) && is_array($diskUsage))): ?>
                         <?php
-                        $percentage = ($limit > 0) ? round(($used / $limit) * 100) : 0;
                         $barColor = $percentage > 85 ? 'var(--accent-rose)' : 'var(--accent-indigo)';
                         ?>
                         <div class="d-flex justify-content-between align-items-end mb-1">
