@@ -33,13 +33,20 @@ class DashboardController extends BaseController
         $openTickets = $trelloService->getOpenTickets();
         $invoices = $zohoService->getInvoices(Session::getDomain());
 
-        // Normalize Disk Usage (Resilient check for list or assoc array)
-        $normalizedDisk = null;
-        if (isset($diskData['data']) && !empty($diskData['data'])) {
-            if (is_array($diskData['data'])) {
-                // If it's a list, get the first one. If it's an assoc array, get the first element.
-                $normalizedDisk = reset($diskData['data']);
+        // Normalize Disk Usage
+        $normalizedDisk = [];
+        if (isset($diskData['data'])) {
+            // Check if it's the data object itself (associative) or a list (indexed)
+            if (isset($diskData['data']['megabytes_used'])) {
+                $normalizedDisk = $diskData['data'];
+            } elseif (isset($diskData['data'][0])) {
+                $normalizedDisk = $diskData['data'][0];
             }
+        }
+
+        // Standardize keys for the view
+        if (isset($normalizedDisk['megabyte_limit']) && !isset($normalizedDisk['megabytes_limit'])) {
+            $normalizedDisk['megabytes_limit'] = $normalizedDisk['megabyte_limit'];
         }
 
         $data = [

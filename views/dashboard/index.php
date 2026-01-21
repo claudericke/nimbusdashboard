@@ -22,7 +22,7 @@
 
                 <div
                     class="card-graphic reveal-up <?php echo $serverStatus ? 'bg-vibrant-emerald' : 'bg-vibrant-rose'; ?>">
-                    <span class="label-graphic">Network Pulse</span>
+                    <span class="label-graphic text-white">Network Pulse</span>
                     <div class="d-flex align-items-center">
                         <div class="status-dot-pulse me-3" style="background: white;"></div>
                         <h2 class="heading-graphic mb-0"><?php echo $serverStatus ? 'Online' : 'Warning'; ?></h2>
@@ -33,10 +33,10 @@
                 </div>
 
                 <div class="card-graphic bg-vibrant-indigo reveal-up">
-                    <span class="label-graphic">Current Tier</span>
+                    <span class="label-graphic text-white">Current Tier</span>
                     <h2 class="heading-graphic mb-1"><?php echo h($packageName); ?></h2>
                     <div>
-                        <span class="badge-graphic" style="background: rgba(255,255,255,0.15)">Elite Tier
+                        <span class="badge-graphic" style="background: rgba(255,255,255,0.15)">Tier
                             Subscription</span>
                     </div>
                 </div>

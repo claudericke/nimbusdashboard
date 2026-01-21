@@ -1,49 +1,7 @@
 <?php require __DIR__ . '/../layouts/header.php'; ?>
 <?php require __DIR__ . '/../layouts/sidebar.php'; ?>
 
-<style>
-    .modal-content {
-        background: var(--bg-card);
-        border: 1px solid var(--border-main);
-        border-radius: 1.5rem;
-    }
 
-    .modal-header {
-        border-bottom: 1px solid var(--border-main);
-        padding: 1.5rem 2rem;
-    }
-
-    .modal-footer {
-        border-top: 1px solid var(--border-main);
-        padding: 1.5rem 2rem;
-    }
-
-    .modal-title {
-        font-family: 'Syne', sans-serif;
-        font-weight: 800;
-        color: white;
-    }
-
-    .nav-tabs {
-        border-bottom: 1px solid var(--border-main);
-    }
-
-    .nav-tabs .nav-link {
-        color: var(--text-secondary);
-        border: none;
-        padding: 1rem 2rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.1em;
-    }
-
-    .nav-tabs .nav-link.active {
-        background: transparent;
-        color: var(--accent-indigo) !important;
-        border-bottom: 3px solid var(--accent-indigo);
-    }
-</style>
 
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
@@ -111,10 +69,10 @@
                                                     data-id="<?php echo h($user['id']); ?>"
                                                     data-username="<?php echo h($user['cpanel_username']); ?>"
                                                     data-domain="<?php echo h($user['domain']); ?>"
-                                                    data-email="<?php echo h($user['email']); ?>"
-                                                    data-fullname="<?php echo h($user['full_name']); ?>"
-                                                    data-package="<?php echo h($user['package']); ?>"
-                                                    data-superuser="<?php echo $user['is_superuser']; ?>">REFINE</button>
+                                                    data-email="<?php echo h($user['email'] ?? ''); ?>"
+                                                    data-fullname="<?php echo h($user['full_name'] ?? ''); ?>"
+                                                    data-package="<?php echo h($user['package'] ?? ''); ?>"
+                                                    data-superuser="<?php echo $user['is_superuser'] ?? 0; ?>">REFINE</button>
 
                                                 <form method="POST" action="/admin/users/delete">
                                                     <?php echo CSRF::field(); ?>

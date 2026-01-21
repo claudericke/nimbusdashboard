@@ -20,6 +20,21 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
         z-index: 1000;
         transition: transform .3s ease;
         border-right: 1px solid var(--border-main);
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+
+    .sidebar::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
     }
 
     @media (max-width:768px) {
@@ -60,15 +75,30 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
     }
 
     .sidebar-nav-link:hover {
-        color: var(--text-primary);
         background: rgba(255, 255, 255, 0.03);
     }
 
     .sidebar-nav-link.active {
-        background: var(--grad-indigo);
-        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.05);
         font-weight: 700;
-        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+    }
+
+    .sidebar-nav-link:hover i,
+    .sidebar-nav-link:hover span {
+        background: var(--grad-indigo);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .sidebar-nav-link.active i,
+    .sidebar-nav-link.active span {
+        background: var(--grad-indigo) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+        color: transparent !important;
     }
 
     .sidebar-nav-link i {
