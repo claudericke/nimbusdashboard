@@ -4,6 +4,7 @@
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
+            <?php require __DIR__ . '/../layouts/alerts.php'; ?>
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
                     <span class="label-graphic">Treasury</span>

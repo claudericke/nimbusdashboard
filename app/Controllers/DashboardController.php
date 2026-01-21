@@ -28,9 +28,13 @@ class DashboardController extends BaseController
         $serverStatus = $this->cpanelService->checkServerStatus();
 
         // New Integrations
-        $trelloService = new TrelloService();
+        $openTickets = [];
+        if (Session::isSuperuser()) {
+            $trelloService = new TrelloService();
+            $openTickets = $trelloService->getOpenTickets();
+        }
+
         $zohoService = new ZohoService();
-        $openTickets = $trelloService->getOpenTickets();
         $invoices = $zohoService->getInvoices(Session::getDomain());
 
         // Normalize Disk Usage (Resilient check for list or assoc array)

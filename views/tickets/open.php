@@ -28,6 +28,7 @@
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
+            <?php require __DIR__ . '/../layouts/alerts.php'; ?>
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
                     <span class="label-graphic">Mission Control</span>
@@ -53,7 +54,7 @@
                                                 <div class="form-check d-flex justify-content-center">
                                                     <input class="form-check-input" type="checkbox"
                                                         style="width:24px; height:24px; cursor:pointer;"
-                                                        onclick="confirmClose('<?php echo h($card['id']); ?>','<?php echo h($card['name']); ?>')">
+                                                        onclick="confirmClose('<?php echo h($card['id']); ?>','<?php echo h(formatTicketName($card['name'])); ?>')">
                                                 </div>
                                             </td>
                                             <td>
@@ -162,7 +163,7 @@
             .then(data => {
                 if (data.success) {
                     const card = data.card;
-                    document.getElementById('cardModalTitle').textContent = card.name;
+                    document.getElementById('cardModalTitle').textContent = card.formatted_name;
                     let html = '<div class="reveal-up">';
 
                     if (card.desc) {

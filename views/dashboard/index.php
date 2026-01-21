@@ -4,6 +4,7 @@
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
+            <?php require __DIR__ . '/../layouts/alerts.php'; ?>
             <!-- Header Section -->
             <div
                 class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5 reveal-up">
@@ -90,45 +91,47 @@
                     <?php endif; ?>
                 </div>
 
-                <!-- 5. Support Tickets (Wide - span 2) -->
-                <div class="card-graphic span-2 bg-vibrant-dark reveal-up">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <span class="label-graphic mb-1">Active Missions</span>
-                            <h3 class="fw-bold mb-0">Your Tickets</h3>
-                        </div>
-                        <a href="/tickets/open"
-                            class="btn btn-sm btn-link badge-graphic text-decoration-none border-0">EXPLORE ALL</a>
-                    </div>
-                    <div class="listing-container">
-                        <?php if (!empty($openTickets)): ?>
-                            <?php foreach (array_slice($openTickets, 0, 3) as $ticket):
-                                $ticketName = formatTicketName($ticket['name']);
-                                ?>
-                                <div class="listing-item-graphic">
-                                    <div class="me-3 overflow-hidden">
-                                        <div class="fw-bold text-truncate fs-5" style="color: white;">
-                                            <?php echo h($ticketName); ?>
-                                        </div>
-                                        <div class="subheading-graphic" style="font-size: 0.8rem;">
-                                            <?php echo h($ticket['list_name'] ?? 'In Queue'); ?>
-                                        </div>
-                                    </div>
-                                    <form method="POST" action="/tickets/close">
-                                        <?php echo CSRF::field(); ?>
-                                        <input type="hidden" name="card_id" value="<?php echo h($ticket['id']); ?>">
-                                        <button type="submit" class="btn-complete-graphic">COMPLETE</button>
-                                    </form>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="text-center py-5">
-                                <i class="fas fa-check-circle mb-3 fs-1 opacity-25"></i>
-                                <p class="text-secondary fs-5">All systems are nominal. No active tickets.</p>
+                <?php if ($isSuperuser): ?>
+                    <!-- 5. Support Tickets (Wide - span 2) -->
+                    <div class="card-graphic span-2 bg-vibrant-dark reveal-up">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <span class="label-graphic mb-1">Active Missions</span>
+                                <h3 class="fw-bold mb-0">Your Tickets</h3>
                             </div>
-                        <?php endif; ?>
+                            <a href="/tickets/open"
+                                class="btn btn-sm btn-link badge-graphic text-decoration-none border-0">EXPLORE ALL</a>
+                        </div>
+                        <div class="listing-container">
+                            <?php if (!empty($openTickets)): ?>
+                                <?php foreach (array_slice($openTickets, 0, 3) as $ticket):
+                                    $ticketName = formatTicketName($ticket['name']);
+                                    ?>
+                                    <div class="listing-item-graphic">
+                                        <div class="me-3 overflow-hidden">
+                                            <div class="fw-bold text-truncate fs-5" style="color: white;">
+                                                <?php echo h($ticketName); ?>
+                                            </div>
+                                            <div class="subheading-graphic" style="font-size: 0.8rem;">
+                                                <?php echo h($ticket['list_name'] ?? 'In Queue'); ?>
+                                            </div>
+                                        </div>
+                                        <form method="POST" action="/tickets/close">
+                                            <?php echo CSRF::field(); ?>
+                                            <input type="hidden" name="card_id" value="<?php echo h($ticket['id']); ?>">
+                                            <button type="submit" class="btn-complete-graphic">COMPLETE</button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center py-5">
+                                    <i class="fas fa-check-circle mb-3 fs-1 opacity-25"></i>
+                                    <p class="text-secondary fs-5">All systems are nominal. No active tickets.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                </div>
+                <?php endif; ?>
 
                 <!-- 6. Recent Invoices (Wide - span 2) -->
                 <div class="card-graphic span-2 bg-vibrant-dark reveal-up">

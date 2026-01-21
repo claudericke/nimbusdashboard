@@ -8,20 +8,7 @@
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
-            <?php if (Session::has('success')): ?>
-                <div class="alert alert-success alert-dismissible fade show reveal-up">
-                    <?php echo h(Session::get('success'));
-                    Session::remove('success'); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
-            <?php if (Session::has('error')): ?>
-                <div class="alert alert-danger alert-dismissible fade show reveal-up">
-                    <?php echo h(Session::get('error'));
-                    Session::remove('error'); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
+            <?php require __DIR__ . '/../layouts/alerts.php'; ?>
 
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">

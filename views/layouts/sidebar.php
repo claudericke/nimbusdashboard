@@ -151,7 +151,7 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
     .sidebar-toggle {
         position: fixed;
         top: 1.5rem;
-        left: 1.5rem;
+        right: 1.5rem;
         z-index: 1001;
         background: #0b0d12;
         border: 1px solid var(--border-main);

@@ -4,14 +4,8 @@
 <div class="main-content">
     <main class="flex-grow-1 p-3 p-md-5">
         <div class="container-fluid">
-            <br>
-            <?php if(Session::has('success')): ?>
-            <div class="alert alert-success alert-dismissible fade show">
-                <?php echo h(Session::get('success')); Session::remove('success'); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <?php endif; ?>
-            
+            <?php require __DIR__ . '/../layouts/alerts.php'; ?>
+
             <div class="bento-grid">
                 <div class="card full-width p-4">
                     <div class="card-body">
@@ -19,10 +13,12 @@
                         <ul class="nav nav-tabs mb-4">
                             <li class="nav-item"><a class="nav-link" href="/admin/users">Manage Users</a></li>
                             <li class="nav-item"><a class="nav-link active" href="/admin/quotes">Manage Quotes</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/admin/permissions">Manage Permissions</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/permissions">Manage Permissions</a>
+                            </li>
                         </ul>
-                        
-                        <button type="button" class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addQuoteModal">Add New Quote</button>
+
+                        <button type="button" class="btn btn-primary mb-4" data-bs-toggle="modal"
+                            data-bs-target="#addQuoteModal">Add New Quote</button>
                         <div class="table-responsive">
                             <table class="table-custom">
                                 <thead>
@@ -33,18 +29,20 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach($quotes as $quote): ?>
-                                    <tr>
-                                        <td><?php echo h($quote['quote_text']); ?></td>
-                                        <td><?php echo h($quote['author']); ?></td>
-                                        <td>
-                                            <form method="POST" action="/admin/quotes/delete" style="display:inline">
-                                                <?php echo CSRF::field(); ?>
-                                                <input type="hidden" name="delete_quote" value="<?php echo h($quote['id']); ?>">
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this quote?')">Delete</button>
-                                            </form>
-                                        </td>
-                                    </tr>
+                                    <?php foreach ($quotes as $quote): ?>
+                                        <tr>
+                                            <td><?php echo h($quote['quote_text']); ?></td>
+                                            <td><?php echo h($quote['author']); ?></td>
+                                            <td>
+                                                <form method="POST" action="/admin/quotes/delete" style="display:inline">
+                                                    <?php echo CSRF::field(); ?>
+                                                    <input type="hidden" name="delete_quote"
+                                                        value="<?php echo h($quote['id']); ?>">
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                        onclick="return confirm('Delete this quote?')">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>

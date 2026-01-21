@@ -1,14 +1,16 @@
 <?php
 
-class TicketController extends BaseController {
+class TicketController extends BaseController
+{
     private $trelloService;
     private $boardId;
     private $lists = [];
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->trelloService = new TrelloService();
         $config = require __DIR__ . '/../../config/trello.php';
-        
+
         $board = $this->trelloService->getBoardByName($config['board_name']);
         $this->boardId = $board['id'] ?? null;
 
@@ -20,7 +22,8 @@ class TicketController extends BaseController {
         }
     }
 
-    public function newTickets() {
+    public function newTickets()
+    {
         $this->requireSuperuser();
 
         $tickets = [];
@@ -31,7 +34,8 @@ class TicketController extends BaseController {
         $this->view('tickets/new', ['tickets' => $tickets]);
     }
 
-    public function openTickets() {
+    public function openTickets()
+    {
         $this->requireSuperuser();
 
         $tickets = [];
@@ -42,7 +46,8 @@ class TicketController extends BaseController {
         $this->view('tickets/open', ['tickets' => $tickets]);
     }
 
-    public function awaitingTickets() {
+    public function awaitingTickets()
+    {
         $this->requireSuperuser();
 
         $tickets = [];
@@ -53,7 +58,8 @@ class TicketController extends BaseController {
         $this->view('tickets/awaiting', ['tickets' => $tickets]);
     }
 
-    public function closedTickets() {
+    public function closedTickets()
+    {
         $this->requireSuperuser();
 
         $tickets = [];
@@ -64,7 +70,8 @@ class TicketController extends BaseController {
         $this->view('tickets/closed', ['tickets' => $tickets]);
     }
 
-    public function closeTicket() {
+    public function closeTicket()
+    {
         $this->requireSuperuser();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -73,20 +80,27 @@ class TicketController extends BaseController {
         }
 
         $cardId = $_POST['card_id'] ?? '';
-        
+
         if (empty($cardId) || !isset($this->lists['Closed Tickets'])) {
             Session::set('error', 'Invalid card ID');
             $this->redirect('/tickets/open');
         }
 
+        // Get card details for the success message
+        $card = $this->trelloService->getCard($cardId);
+        $ticketName = formatTicketName($card['name'] ?? 'Ticket');
+
         $this->trelloService->moveCard($cardId, $this->lists['Closed Tickets']);
         $this->trelloService->markCardComplete($cardId);
 
-        Session::set('success', 'Ticket closed successfully');
-        $this->redirect('/tickets/open');
+        Session::set('success', "Mission accomplished: '{$ticketName}' has been resolved.");
+
+        $referer = $_SERVER['HTTP_REFERER'] ?? '/tickets/open';
+        $this->redirect($referer);
     }
 
-    public function checkNew() {
+    public function checkNew()
+    {
         $this->requireSuperuser();
 
         $lastCheck = Session::get('last_ticket_check', []);
@@ -94,7 +108,7 @@ class TicketController extends BaseController {
 
         if (isset($this->lists['Open Tickets'])) {
             $tickets = $this->trelloService->getCards($this->lists['Open Tickets']);
-            
+
             foreach ($tickets as $ticket) {
                 if (!in_array($ticket['id'], $lastCheck)) {
                     $newTickets[] = [
@@ -111,14 +125,17 @@ class TicketController extends BaseController {
         $this->json(['new_tickets' => $newTickets]);
     }
 
-    public function getCard($id) {
+    public function getCard($id)
+    {
         $this->requireSuperuser();
 
         $card = $this->trelloService->getCard($id);
-        
+
         if (!$card) {
             $this->json(['success' => false, 'message' => 'Card not found'], 404);
         }
+
+        $card['formatted_name'] = formatTicketName($card['name'] ?? '');
 
         $this->json(['success' => true, 'card' => $card]);
     }

@@ -34,13 +34,19 @@ function env($key, $default = null)
 
 function formatTicketName($name)
 {
-    if (strpos($name, '{') !== false) {
-        $parts = explode('-', $name, 2);
-        $prefix = trim($parts[0]);
-        $jsonStr = $parts[1] ?? '';
-        $json = @json_decode($jsonStr, true);
+    // Try to find JSON block starting with {
+    $bracePos = strpos($name, '{');
+    if ($bracePos !== false) {
+        $prefixPart = substr($name, 0, $bracePos);
+        $jsonPart = substr($name, $bracePos);
+
+        // Clean up prefix (remove trailing dashes and spaces)
+        $prefix = preg_replace('/[\s\-\–\—]+$/u', '', $prefixPart);
+        $json = @json_decode($jsonPart, true);
+
         if ($json) {
-            return $prefix . ": " . ($json['value'] ?? $json['title'] ?? 'New Request');
+            $ticketTitle = $json['value'] ?? $json['title'] ?? 'New Request';
+            return trim($prefix) . ": " . trim($ticketTitle);
         }
     }
     return $name;
