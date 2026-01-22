@@ -12,9 +12,14 @@ class ActivityLog
     public function log($userId, $actionType, $description)
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-        $stmt = $this->db->prepare("INSERT INTO activity_logs (user_id, action_type, description, ip_address) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("isss", $userId, $actionType, $description, $ip);
-        return $stmt->execute();
+        try {
+            $stmt = $this->db->prepare("INSERT INTO activity_logs (user_id, action_type, description, ip_address) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("isss", $userId, $actionType, $description, $ip);
+            return $stmt->execute();
+        } catch (Exception $e) {
+            // Silently fail if table doesn't exist to prevent app crash during setup/migrations
+            return false;
+        }
     }
 
     public function getRecent($limit = 10)
