@@ -1,5 +1,21 @@
--- Add user_role column to users table
-ALTER TABLE users ADD COLUMN user_role VARCHAR(50) DEFAULT 'client' AFTER is_superuser;
+-- Safely add user_role column if it doesn't exist
+SET @dbname = DATABASE();
+SET @tablename = "users";
+SET @columnname = "user_role";
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (table_name = @tablename)
+      AND (table_schema = @dbname)
+      AND (column_name = @columnname)
+  ) > 0,
+  "SELECT 1",
+  "ALTER TABLE users ADD COLUMN user_role VARCHAR(50) DEFAULT 'client' AFTER is_superuser"
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
 
 -- Create roles table
 CREATE TABLE IF NOT EXISTS roles (

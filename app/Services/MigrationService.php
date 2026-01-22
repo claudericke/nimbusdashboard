@@ -74,22 +74,29 @@ class MigrationService
 
         // Execute multiple statements
         $mysqli = $this->db->getConnection();
-        if ($mysqli->multi_query($sql)) {
-            // Consume all results to clear the connection
-            do {
-                if ($result = $mysqli->store_result()) {
-                    $result->free();
-                }
-            } while ($mysqli->more_results() && $mysqli->next_result());
 
-            // Log execution
-            $stmt = $this->db->prepare("INSERT INTO migrations_log (filename) VALUES (?)");
-            $stmt->bind_param("s", $filename);
-            $stmt->execute();
+        try {
+            if ($mysqli->multi_query($sql)) {
+                // Consume all results to clear the connection
+                do {
+                    if ($result = $mysqli->store_result()) {
+                        $result->free();
+                    }
+                } while ($mysqli->more_results() && $mysqli->next_result());
 
-            return ['success' => true, 'message' => 'Migration executed successfully'];
-        } else {
-            return ['success' => false, 'message' => 'Database error: ' . $this->db->error];
+                // Log execution
+                $stmt = $this->db->prepare("INSERT INTO migrations_log (filename) VALUES (?)");
+                $stmt->bind_param("s", $filename);
+                $stmt->execute();
+
+                return ['success' => true, 'message' => 'Migration executed successfully'];
+            } else {
+                return ['success' => false, 'message' => 'Database error: ' . $this->db->error];
+            }
+        } catch (mysqli_sql_exception $e) {
+            return ['success' => false, 'message' => 'SQL Error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
 }
