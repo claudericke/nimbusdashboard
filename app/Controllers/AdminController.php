@@ -73,7 +73,16 @@ class AdminController extends BaseController
             if ($this->userModel->create($data)) {
                 // Send Onboarding Email
                 if (!empty($email)) {
-                    $this->sendOnboardingEmail($email, $username, $password, $domain);
+                    try {
+                        require_once __DIR__ . '/../Services/MailService.php';
+                        $mailService = new MailService();
+                        // We use $token as the credential in the email since password is removed
+                        if (!$mailService->sendOnboardingEmail($data, $token)) {
+                            Session::set('warning', 'User created, but onboarding email failed. Check logs.');
+                        }
+                    } catch (Exception $e) {
+                        error_log("MailService Error: " . $e->getMessage());
+                    }
                 }
                 Session::set('success', 'User created successfully: ' . h($username));
 
@@ -89,42 +98,7 @@ class AdminController extends BaseController
         $this->redirect('/admin/users');
     }
 
-    private function sendOnboardingEmail($to, $username, $password, $domain)
-    {
-        $template = file_get_contents(__DIR__ . '/../../onboardingEmail.md');
-        $body = str_replace(
-            ['{{username}}', '{{password}}', '{{domainURI}}'],
-            [$username, $password, $domain],
-            $template
-        );
 
-        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-        try {
-            // Server settings
-            $mail->isSMTP();
-            $mail->Host = env('SMTP_HOST', 'localhost');
-            $mail->SMTPAuth = true;
-            $mail->Username = env('SMTP_USER');
-            $mail->Password = env('SMTP_PASS');
-            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = env('SMTP_PORT', 587);
-
-            // Recipients
-            $mail->setFrom(env('SMTP_FROM', 'support@driftnimbus.com'), 'Drift Nimbus Support');
-            $mail->addAddress($to);
-
-            // Content
-            $mail->isHTML(true);
-            $mail->Subject = 'Welcome to Drift Nimbus - Your digital backbone is live.';
-            $mail->Body = $body;
-
-            $mail->send();
-            return true;
-        } catch (Exception $e) {
-            // Log error or set session error
-            return false;
-        }
-    }
 
     public function editUser()
     {
