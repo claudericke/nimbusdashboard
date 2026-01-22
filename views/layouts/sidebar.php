@@ -244,10 +244,16 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
 <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
+    <div class="sidebar-logo d-flex justify-content-between align-items-center">
         <a href="/dashboard">
             <img src="https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg"
-                alt="Drift Nimbus" style="width:100%;max-width:180px">
+                alt="Drift Nimbus" style="width:100%;max-width:150px">
+        </a>
+        <a href="#" class="text-secondary position-relative me-1" data-bs-toggle="modal" data-bs-target="#activityModal">
+            <i class="fas fa-bell" style="font-size:1.1rem; color: var(--text-secondary); transition: color 0.2s;"
+                onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-secondary)'"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-1 border border-dark rounded-circle"
+                style="background: var(--accent-rose); width: 10px; height: 10px;"></span>
         </a>
     </div>
 

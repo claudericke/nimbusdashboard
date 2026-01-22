@@ -25,54 +25,61 @@
 
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div class="d-flex gap-2">
-                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetChanges()">CANCEL</button>
-                             <button type="button" class="btn btn-sm btn-complete-graphic" onclick="showConfirmation()">SAVE CHANGES</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                onclick="resetChanges()">CANCEL</button>
+                            <button type="button" class="btn btn-sm btn-complete-graphic"
+                                onclick="showConfirmation()">SAVE CHANGES</button>
                         </div>
                     </div>
-                    
+
                     <form id="permissionsForm" method="POST" action="/admin/permissions/update">
                         <?php echo CSRF::field(); ?>
                         <div class="table-responsive">
-                        <table class="table-custom">
-                            <thead>
-                                <tr>
-                                    <th>Role</th>
-                                    <th>Dashboard</th>
-                                    <th>Domains</th>
-                                    <th>Emails</th>
-                                    <th>SSL</th>
-                                    <th>Billing</th>
-                                    <th>Settings</th>
-                                    <th>Tickets</th>
-                                    <th>Admin</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($permissions as $role => $perms):
-                                    $allowedMenus = array_column($perms, 'menu_item');
-                                    ?>
+                            <table class="table-custom">
+                                <thead>
                                     <tr>
-                                        <td><strong><?php echo h(ucfirst($role)); ?></strong></td>
-                                        <?php foreach (['dashboard', 'domains', 'emails', 'ssl', 'billing', 'settings', 'tickets', 'admin'] as $menu):
-                                            $isEnabled = in_array($menu, $allowedMenus);
-                                            $key = $role . '|' . $menu;
-                                            ?>
-                                            <td class="text-center">
-                                                <input type="hidden" name="permissions[<?php echo h($key); ?>]"
-                                                    id="input_<?php echo h($key); ?>"
-                                                    value="<?php echo $isEnabled ? '1' : '0'; ?>"
-                                                    data-initial="<?php echo $isEnabled ? '1' : '0'; ?>">
-                                                <i class="cursor-pointer fas <?php echo $isEnabled ? 'fa-check-circle text-accent-emerald' : 'fa-times-circle'; ?>"
-                                                    id="icon_<?php echo h($key); ?>"
-                                                    style="font-size:1.2rem; transition: all 0.2s; <?php echo $isEnabled ? 'filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));' : 'opacity: 0.3; color: var(--accent-rose);'; ?>"
-                                                    onclick="togglePermission('<?php echo h($key); ?>')"></i>
-                                            </td>
-                                        <?php endforeach; ?>
+                                        <th>Role</th>
+                                        <th>Dashboard</th>
+                                        <th>Domains</th>
+                                        <th>Emails</th>
+                                        <th>SSL</th>
+                                        <th>Billing</th>
+                                        <th>Settings</th>
+                                        <th>Tickets</th>
+                                        <th>Admin</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($permissions as $role => $perms):
+                                        $allowedMenus = [];
+                                        foreach ($perms as $p) {
+                                            if ($p['can_access'] == 1) {
+                                                $allowedMenus[] = $p['menu_item'];
+                                            }
+                                        }
+                                        ?>
+                                        <tr>
+                                            <td><strong><?php echo h(ucfirst($role)); ?></strong></td>
+                                            <?php foreach (['dashboard', 'domains', 'emails', 'ssl', 'billing', 'settings', 'tickets', 'admin'] as $menu):
+                                                $isEnabled = in_array($menu, $allowedMenus);
+                                                $key = $role . '|' . $menu;
+                                                ?>
+                                                <td class="text-center">
+                                                    <input type="hidden" name="permissions[<?php echo h($key); ?>]"
+                                                        id="input_<?php echo h($key); ?>"
+                                                        value="<?php echo $isEnabled ? '1' : '0'; ?>"
+                                                        data-initial="<?php echo $isEnabled ? '1' : '0'; ?>">
+                                                    <i class="cursor-pointer fas <?php echo $isEnabled ? 'fa-check-circle text-accent-emerald' : 'fa-times-circle'; ?>"
+                                                        id="icon_<?php echo h($key); ?>"
+                                                        style="font-size:1.2rem; transition: all 0.2s; <?php echo $isEnabled ? 'filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));' : 'opacity: 0.3; color: var(--accent-rose);'; ?>"
+                                                        onclick="togglePermission('<?php echo h($key); ?>')"></i>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -90,12 +97,14 @@
             </div>
             <div class="modal-body p-4">
                 <p class="text-secondary mb-3">You are about to modify access privileges. Please review the changes:</p>
-                <div id="changesList" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem;">
+                <div id="changesList"
+                    style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem;">
                     <!-- Changes populated by JS -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" data-bs-dismiss="modal">ABORT</button>
+                <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold"
+                    data-bs-dismiss="modal">ABORT</button>
                 <button type="button" class="btn-complete-graphic" onclick="submitForm()">CONFIRM & SAVE</button>
             </div>
         </div>
@@ -106,12 +115,12 @@
     function togglePermission(key) {
         const input = document.getElementById('input_' + key);
         const icon = document.getElementById('icon_' + key);
-        
+
         let currentVal = parseInt(input.value);
         let newVal = currentVal === 1 ? 0 : 1;
-        
+
         input.value = newVal;
-        
+
         if (newVal === 1) {
             icon.className = "cursor-pointer fas fa-check-circle text-accent-emerald";
             icon.style.filter = "drop-shadow(0 0 8px rgba(16, 185, 129, 0.4))";
@@ -126,7 +135,7 @@
     }
 
     function resetChanges() {
-        if(confirm('Discard all unsaved changes?')) {
+        if (confirm('Discard all unsaved changes?')) {
             location.reload();
         }
     }
@@ -136,26 +145,26 @@
         const changesList = document.getElementById('changesList');
         let changesHTML = '';
         let hasChanges = false;
-        
+
         inputs.forEach(input => {
-            if(input.value !== input.getAttribute('data-initial')) {
+            if (input.value !== input.getAttribute('data-initial')) {
                 hasChanges = true;
                 const key = input.id.replace('input_', '');
                 const [role, menu] = key.split('|');
                 const action = input.value === '1' ? '<span class="text-accent-emerald">GRANTED</span>' : '<span class="text-accent-rose">REVOKED</span>';
-                
+
                 changesHTML += `<div class="mb-2 d-flex justify-content-between border-bottom border-secondary pb-1" style="border-opacity:0.2">
                     <span>${role} <i class="fas fa-arrow-right mx-1 text-muted" style="font-size:0.7rem"></i> ${menu}</span>
                     <strong class="ms-2">${action}</strong>
                 </div>`;
             }
         });
-        
-        if(!hasChanges) {
+
+        if (!hasChanges) {
             alert('No changes to save.');
             return;
         }
-        
+
         changesList.innerHTML = changesHTML;
         new bootstrap.Modal(document.getElementById('confirmationModal')).show();
     }

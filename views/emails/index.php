@@ -46,7 +46,11 @@
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
                     <span class="label-graphic">Communications</span>
-                    <h2 class="mb-4">Email Accounts</h2>
+                    <div class="d-flex align-items-center mb-4">
+                        <h2 class="mb-0">Email Accounts</h2>
+                        <a href="/emails/create" class="btn btn-sm btn-complete-graphic bg-vibrant-emerald ms-auto"><i
+                                class="fas fa-plus me-2"></i>CREATE ACCOUNT</a>
+                    </div>
                     <div class="table-responsive">
                         <table class="table-custom">
                             <thead>

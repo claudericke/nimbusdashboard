@@ -8,6 +8,7 @@ $router->get('/switch-domain', 'AuthController@switchDomain');
 
 // Dashboard
 $router->get('/dashboard', 'DashboardController@index');
+$router->get('/api/activity-logs', 'ActivityController@getRecent');
 
 // Domains
 $router->get('/domains', 'DomainController@index');

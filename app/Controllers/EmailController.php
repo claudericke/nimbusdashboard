@@ -1,31 +1,46 @@
 <?php
 
-class EmailController extends BaseController {
+class EmailController extends BaseController
+{
     private $cpanelService;
+    private $activityLog;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->cpanelService = new CpanelService();
+        $this->activityLog = new ActivityLog();
     }
 
-    public function index() {
+    public function index()
+    {
         $this->requireAuth();
 
         $page = $_GET['page'] ?? 1;
         $emailsData = $this->cpanelService->getEmails($page, 10);
-        
+
+        // Ensure uniqueness just in case
+        $uniqueEmails = [];
+        if (!empty($emailsData['data'])) {
+            foreach ($emailsData['data'] as $email) {
+                $uniqueEmails[$email['email']] = $email;
+            }
+        }
+
         $this->view('emails/index', [
-            'emails' => $emailsData['data'] ?? [],
+            'emails' => array_values($uniqueEmails),
             'metadata' => $emailsData['metadata'] ?? [],
             'currentPage' => $page
         ]);
     }
 
-    public function create() {
+    public function create()
+    {
         $this->requireAuth();
         $this->view('emails/create');
     }
 
-    public function store() {
+    public function store()
+    {
         $this->requireAuth();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -36,7 +51,7 @@ class EmailController extends BaseController {
 
         $email = trim($_POST['email'] ?? '');
         $password = trim($_POST['password'] ?? '');
-        $quota = (int)($_POST['quota'] ?? 250);
+        $quota = (int) ($_POST['quota'] ?? 250);
 
         if (empty($email) || empty($password)) {
             Session::set('error', 'Email and password are required');
@@ -49,6 +64,9 @@ class EmailController extends BaseController {
             Session::set('success', 'Email account created successfully');
             Session::set('new_email', $email);
             Session::set('new_password', $password);
+
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'email', "Created email account: $email");
         } else {
             Session::set('error', $result['errors'][0] ?? 'Failed to create email account');
         }
@@ -56,7 +74,8 @@ class EmailController extends BaseController {
         $this->redirect('/emails');
     }
 
-    public function changePassword() {
+    public function changePassword()
+    {
         $this->requireAuth();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -79,6 +98,9 @@ class EmailController extends BaseController {
             Session::set('success', 'Password changed successfully');
             Session::set('changed_email', $email);
             Session::set('changed_password', $password);
+
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'email', "Changed password for: $email");
         } else {
             Session::set('error', $result['errors'][0] ?? 'Failed to change password');
         }
@@ -86,7 +108,8 @@ class EmailController extends BaseController {
         $this->redirect('/emails');
     }
 
-    public function delete() {
+    public function delete()
+    {
         $this->requireAuth();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -106,6 +129,9 @@ class EmailController extends BaseController {
 
         if ($result['status'] == 1) {
             Session::set('success', 'Email account deleted successfully');
+
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'email', "Deleted email account: $email");
         } else {
             Session::set('error', $result['errors'][0] ?? 'Failed to delete email account');
         }

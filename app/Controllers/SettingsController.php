@@ -3,10 +3,12 @@
 class SettingsController extends BaseController
 {
     private $userModel;
+    private $activityLog;
 
     public function __construct()
     {
         $this->userModel = new User();
+        $this->activityLog = new ActivityLog();
     }
 
     public function index()
@@ -53,6 +55,9 @@ class SettingsController extends BaseController
             Session::set('profile_name', $profileName);
             Session::set('profile_picture', $profilePicture);
             Session::set('success', 'Profile updated successfully');
+
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'settings', "Updated profile settings");
         } else {
             Session::set('error', 'Failed to update profile');
         }

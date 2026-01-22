@@ -1,20 +1,24 @@
 <?php
 
-class AuthController extends BaseController {
+class AuthController extends BaseController
+{
     private $userModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->userModel = new User();
     }
 
-    public function showLogin() {
+    public function showLogin()
+    {
         if (Session::isLoggedIn()) {
             $this->redirect('/dashboard');
         }
         $this->view('auth/login');
     }
 
-    public function login() {
+    public function login()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/');
         }
@@ -30,7 +34,7 @@ class AuthController extends BaseController {
         }
 
         $user = $this->userModel->findByDomain($domain);
-        
+
         if (!$user) {
             Session::set('error', 'Domain not found in system.');
             $this->redirect('/');
@@ -106,7 +110,8 @@ class AuthController extends BaseController {
         Session::set('cpanel_username', $username);
         Session::set('cpanel_domain', $domain);
         Session::set('cpanel_api_token', $apiToken);
-        Session::set('is_superuser', (int)($user['is_superuser'] ?? 0));
+        Session::set('user_id', $user['id']);
+        Session::set('is_superuser', (int) ($user['is_superuser'] ?? 0));
         Session::set('user_role', $userRole);
         Session::set('profile_name', $user['full_name']);
         Session::set('profile_picture', $user['profile_picture_url']);
@@ -117,26 +122,28 @@ class AuthController extends BaseController {
         $this->redirect('/dashboard');
     }
 
-    public function logout() {
+    public function logout()
+    {
         Session::destroy();
         $this->redirect('/');
     }
 
-    public function switchDomain() {
+    public function switchDomain()
+    {
         $this->requireSuperuser();
 
-        $userId = (int)($_GET['id'] ?? 0);
+        $userId = (int) ($_GET['id'] ?? 0);
         $user = $this->userModel->find($userId);
 
         if ($user) {
             $isSuperuser = Session::get('is_superuser');
             $userRole = Session::get('user_role');
-            
+
             // Temporarily set session to test token
             Session::set('cpanel_username', $user['cpanel_username']);
             Session::set('cpanel_domain', $user['domain']);
             Session::set('cpanel_api_token', $user['api_token']);
-            
+
             // Test if token is valid
             $cpanelService = new CpanelService();
             try {
@@ -161,10 +168,11 @@ class AuthController extends BaseController {
                     }
                 }
             }
-            
+
             Session::set('profile_name', $user['full_name']);
             Session::set('profile_picture', $user['profile_picture_url']);
             Session::set('package_name', $user['package']);
+            Session::set('user_id', $user['id']);
             Session::set('is_superuser', $isSuperuser);
             Session::set('user_role', $userRole);
         }

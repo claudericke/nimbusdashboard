@@ -6,6 +6,7 @@ class AdminController extends BaseController
     private $quoteModel;
     private $permissionModel;
     private $cpanelService;
+    private $activityLog;
 
     public function __construct()
     {
@@ -13,6 +14,7 @@ class AdminController extends BaseController
         $this->quoteModel = new Quote();
         $this->permissionModel = new Permission();
         $this->cpanelService = new CpanelService();
+        $this->activityLog = new ActivityLog();
     }
 
     public function users()
@@ -75,6 +77,9 @@ class AdminController extends BaseController
                 $this->sendOnboardingEmail($email, $username, $password, $domain);
             }
             Session::set('success', 'User created successfully and onboarding email sent.');
+
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'user', "Created new user: $username");
         } else {
             Session::set('error', 'Failed to create user');
         }
@@ -170,6 +175,8 @@ class AdminController extends BaseController
 
         if ($this->userModel->update($id, $data)) {
             Session::set('success', 'User updated successfully');
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'user', "Updated user: $username");
         } else {
             Session::set('error', 'Failed to update user');
         }
@@ -191,6 +198,8 @@ class AdminController extends BaseController
 
         if ($this->userModel->delete($id)) {
             Session::set('success', 'User deleted successfully');
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'user', "Deleted user ID: $id");
         } else {
             Session::set('error', 'Failed to delete user');
         }
