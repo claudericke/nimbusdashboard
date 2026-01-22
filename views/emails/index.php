@@ -172,8 +172,71 @@
     </div>
 </div>
 
+<div class="modal fade" id="clipboardModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clipboardTitle">Notification</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-secondary small mb-3">Copy the details below to share with the user.</p>
+                <textarea id="clipboardText" class="form-control bg-dark text-white border-secondary" rows="10" readonly
+                    style="font-family: monospace; font-size: 0.9rem;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold"
+                    data-bs-dismiss="modal">CLOSE</button>
+                <button type="button" class="btn-complete-graphic bg-vibrant-emerald" id="copyButton"><i
+                        class="fas fa-copy me-2"></i>COPY DETAILS</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="/public/js/password-generator.js"></script>
 <script>
+    // Clipboard Modal Logic
+    <?php if (Session::has('clipboard_message')): ?>
+        document.addEventListener('DOMContentLoaded', function () {
+            const clipboardModalElement = document.getElementById('clipboardModal');
+            if (clipboardModalElement) {
+                const clipboardModal = new bootstrap.Modal(clipboardModalElement);
+                document.getElementById('clipboardText').value = `<?php echo str_replace('`', '\`', Session::get('clipboard_message')); ?>`;
+                document.getElementById('clipboardTitle').textContent = `<?php echo addslashes(Session::get('clipboard_title', 'Notification')); ?>`;
+                clipboardModal.show();
+            }
+        });
+        <?php
+        Session::remove('clipboard_message');
+        Session::remove('clipboard_title');
+        ?>
+    <?php endif; ?>
+
+    document.getElementById('copyButton')?.addEventListener('click', function () {
+        const copyText = document.getElementById("clipboardText");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+
+        // Try modern API first, fallback to execCommand
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                showCopiedFeedback(this);
+            });
+        } else {
+            document.execCommand('copy');
+            showCopiedFeedback(this);
+        }
+    });
+
+    function showCopiedFeedback(btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>COPIED';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    }
+
     document.getElementById('changePasswordModal')?.addEventListener('show.bs.modal', function (e) {
         const email = e.relatedTarget.getAttribute('data-email');
         document.getElementById('change-password-email').value = email;

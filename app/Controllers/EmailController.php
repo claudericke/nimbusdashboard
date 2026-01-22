@@ -65,6 +65,20 @@ class EmailController extends BaseController
             Session::set('new_email', $email);
             Session::set('new_password', $password);
 
+            // Generate Clipboard Message
+            $domain = substr(strrchr($email, "@"), 1);
+            $templatePath = __DIR__ . '/../../agent-os/product/newAccountMessage.md';
+            if (file_exists($templatePath)) {
+                $template = file_get_contents($templatePath);
+                $message = str_replace(
+                    ['{domain}', '{EMAIL_ADDRESS}', '{PASSWORD}'],
+                    [$domain, $email, $password],
+                    $template
+                );
+                Session::set('clipboard_message', $message);
+                Session::set('clipboard_title', 'New Account Details');
+            }
+
             // Log activity
             $this->activityLog->log($this->getCurrentUserId(), 'email', "Created email account: $email");
         } else {
@@ -98,6 +112,19 @@ class EmailController extends BaseController
             Session::set('success', 'Password changed successfully');
             Session::set('changed_email', $email);
             Session::set('changed_password', $password);
+
+            // Generate Clipboard Message
+            $templatePath = __DIR__ . '/../../agent-os/product/passwordChangeMessage.md';
+            if (file_exists($templatePath)) {
+                $template = file_get_contents($templatePath);
+                $message = str_replace(
+                    ['{e-mail address}', '{EMAIL_ADDRESS}', '{PASSWORD}'],
+                    [$email, $email, $password],
+                    $template
+                );
+                Session::set('clipboard_message', $message);
+                Session::set('clipboard_title', 'Password Updated');
+            }
 
             // Log activity
             $this->activityLog->log($this->getCurrentUserId(), 'email', "Changed password for: $email");
