@@ -1,13 +1,16 @@
 <?php
 
-class ZohoService {
+class ZohoService
+{
     private $config;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->config = require __DIR__ . '/../../config/zoho.php';
     }
 
-    public function refreshToken() {
+    public function refreshToken()
+    {
         $url = 'https://accounts.zoho.com/oauth/v2/token';
         $data = [
             'refresh_token' => $this->config['refresh_token'],
@@ -32,14 +35,16 @@ class ZohoService {
         return null;
     }
 
-    private function updateEnvToken($token) {
+    private function updateEnvToken($token)
+    {
         $envFile = __DIR__ . '/../../.env';
         $content = file_get_contents($envFile);
         $content = preg_replace('/ZOHO_ACCESS_TOKEN=.*/', "ZOHO_ACCESS_TOKEN={$token}", $content);
         file_put_contents($envFile, $content);
     }
 
-    public function call($endpoint, $method = 'GET', $data = null) {
+    public function call($endpoint, $method = 'GET', $data = null)
+    {
         $url = "https://books.zoho.com/api/v3/{$endpoint}";
         $url .= (strpos($url, '?') ? '&' : '?') . "organization_id={$this->config['organization_id']}";
 
@@ -67,8 +72,39 @@ class ZohoService {
         return json_decode($response, true);
     }
 
-    public function getInvoices($domain) {
-        $response = $this->call("invoices?customer_name={$domain}");
+    public function getContactId($email, $domain)
+    {
+        // Try searching by Email first (most accurate)
+        if (!empty($email)) {
+            $response = $this->call("contacts?email_contains=" . urlencode($email));
+            if (!empty($response['contacts'])) {
+                return $response['contacts'][0]['contact_id'];
+            }
+        }
+
+        // Try searching by Domain/Company Name
+        if (!empty($domain)) {
+            $response = $this->call("contacts?company_name_contains=" . urlencode($domain));
+            if (!empty($response['contacts'])) {
+                return $response['contacts'][0]['contact_id'];
+            }
+        }
+
+        return null;
+    }
+
+    public function getInvoices($domain, $email = null)
+    {
+        // First try to resolve the specific contact
+        $contactId = $this->getContactId($email, $domain);
+
+        if ($contactId) {
+            $response = $this->call("invoices?customer_id={$contactId}");
+        } else {
+            // Fallback to legacy loose search
+            $response = $this->call("invoices?customer_name=" . urlencode($domain));
+        }
+
         return $response['invoices'] ?? [];
     }
 }

@@ -72,7 +72,10 @@
                                                     data-email="<?php echo h($user['email'] ?? ''); ?>"
                                                     data-fullname="<?php echo h($user['full_name'] ?? ''); ?>"
                                                     data-package="<?php echo h($user['package'] ?? ''); ?>"
-                                                    data-superuser="<?php echo $user['is_superuser'] ?? 0; ?>">REFINE</button>
+                                                    data-superuser="<?php echo $user['is_superuser'] ?? 0; ?>"
+                                                    data-role="<?php echo h($user['user_role'] ?? 'client'); ?>"
+                                                    data-password="<?php echo h($user['cpanel_password'] ?? ''); ?>">EDIT
+                                                    USER</button>
 
                                                 <form method="POST" action="/admin/users/delete">
                                                     <?php echo CSRF::field(); ?>
@@ -159,11 +162,125 @@
     </div>
 </div>
 
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Operative Dossier</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/admin/users/edit">
+                <?php echo CSRF::field(); ?>
+                <input type="hidden" name="id" id="edit_id">
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="label-graphic">Nexus Alias</label>
+                        <input type="text" class="form-control" name="cpanel_username" id="edit_username" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label-graphic">Operation Domain</label>
+                        <input type="text" class="form-control" name="cpanel_domain" id="edit_domain" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label-graphic">Frequency Address</label>
+                        <input type="email" class="form-control" name="email" id="edit_email" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label-graphic">Security Credentials</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="cpanel_password" id="edit_password" required>
+                            <button class="btn btn-outline-secondary px-3" type="button"
+                                onclick="generateRandomPassword('edit_password')" title="Generate Access Key"><i
+                                    class="fas fa-key"></i></button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="label-graphic">FullName</label>
+                            <input type="text" class="form-control" name="full_name" id="edit_fullname">
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <label class="label-graphic">Service Tier</label>
+                            <input type="text" class="form-control" name="package" id="edit_package">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="label-graphic">Clearance Role</label>
+                            <select class="form-select" name="user_role" id="edit_role">
+                                <option value="client">Client</option>
+                                <option value="viewer">Viewer</option>
+                                <option value="admin">Administrator</option>
+                                <option value="superuser">Super User</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-4 pt-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_superuser" value="1"
+                                    id="edit_isSuper">
+                                <label class="form-check-label text-white fw-bold ms-2" for="edit_isSuper">ELITE
+                                    PRIVILEGES</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold"
+                        data-bs-dismiss="modal">ABORT</button>
+                    <button type="submit" class="btn-complete-graphic">UPDATE LEDGER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="/public/js/password-generator.js"></script>
 <script>
     if (typeof attachPasswordGenerator === 'function') {
         attachPasswordGenerator('cpanel_password', 'generate_cpanel_password');
     }
+
+    function generateRandomPassword(targetId) {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+        let password = "";
+        for (let i = 0; i < 16; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById(targetId).value = password;
+    }
+
+    // Populate Edit Modal
+    var editUserModal = document.getElementById('editUserModal');
+    editUserModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+
+        var id = button.getAttribute('data-id');
+        var username = button.getAttribute('data-username');
+        var domain = button.getAttribute('data-domain');
+        var email = button.getAttribute('data-email');
+        var password = button.getAttribute('data-password');
+        var fullname = button.getAttribute('data-fullname');
+        var package = button.getAttribute('data-package');
+        var isSuper = button.getAttribute('data-superuser');
+        var role = button.getAttribute('data-role');
+
+        var modal = this;
+        modal.querySelector('#edit_id').value = id;
+        modal.querySelector('#edit_username').value = username;
+        modal.querySelector('#edit_domain').value = domain;
+        modal.querySelector('#edit_email').value = email;
+        modal.querySelector('#edit_password').value = password;
+        modal.querySelector('#edit_fullname').value = fullname;
+        modal.querySelector('#edit_package').value = package;
+        modal.querySelector('#edit_role').value = role;
+
+        if (isSuper == '1') {
+            modal.querySelector('#edit_isSuper').checked = true;
+        } else {
+            modal.querySelector('#edit_isSuper').checked = false;
+        }
+    });
 </script>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>
