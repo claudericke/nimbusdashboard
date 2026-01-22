@@ -6,8 +6,8 @@
         <div class="container-fluid">
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
-                    <span class="label-graphic">Treasury</span>
-                    <h2 class="mb-4">Financial History</h2>
+                    <span class="label-graphic">Billing</span>
+                    <h2 class="mb-4">Invoice History</h2>
                     <div class="table-responsive">
                         <table class="table-custom">
                             <thead>
