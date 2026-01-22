@@ -6,13 +6,13 @@
         <div class="container-fluid">
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
-                    <span class="label-graphic">Strategic Communication</span>
-                    <h2 class="mb-4">New Mission Transmission</h2>
+                    <span class="label-graphic">SUPPORT TASKS</span>
+                    <h2 class="mb-4">Create Ticket</h2>
 
                     <div class="row align-items-center">
                         <div class="col-lg-8">
-                            <p class="text-white fs-5 mb-4">You are about to initialize a new support protocol on the
-                                Trello Nexus. Ensure all parameters are defined before deployment.</p>
+                            <p class="text-white fs-5 mb-4">Create a new ticket on Trello. Tickets logged on Trello will
+                                be shown on the dashboard.</p>
 
                             <div class="p-4 bg-vibrant-dark rounded-4 mb-5"
                                 style="border: 1px solid var(--border-main);">
@@ -28,7 +28,7 @@
                             <a href="https://trello.com" target="_blank"
                                 class="btn-complete-graphic shadow-glow text-decoration-none d-inline-block text-center"
                                 style="min-width: 250px;">
-                                LAUNCH TRELLO NEXUS <i class="fas fa-external-link-alt ms-2"></i>
+                                OPEN TRELLO <i class="fas fa-external-link-alt ms-2"></i>
                             </a>
                         </div>
                         <div class="col-lg-4 d-none d-lg-block text-center">

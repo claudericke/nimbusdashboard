@@ -1,0 +1,15 @@
+Debugging Zoho for Domain: driftstudio.co.zw, Email: hello@driftstudio.co.zw
+------------------------------------------------
+1. Search by customer_name='driftstudio.co.zw': ...
+   Found: 2 invoices.
+
+2. Search Contacts by company_name_contains='driftstudio.co.zw': ...
+   Found: 0 contacts.
+
+3. Search Contacts by email_contains='hello@driftstudio.co.zw': ...
+   Found: 0 contacts.
+
+4. Testing ZohoService::getContactId logic:
+   Resolved Contact ID: NULL
+   Fallback to default search...
+   Service returned 2 invoices.

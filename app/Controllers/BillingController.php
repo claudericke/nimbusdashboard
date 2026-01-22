@@ -30,12 +30,13 @@ class BillingController extends BaseController
 
         // Generate payment URLs for unpaid invoices
         foreach ($invoices as &$invoice) {
-            if ($invoice['status'] === 'unpaid' && $invoice['balance'] > 0) {
+            // Generate URL if there is a balance to pay, regardless of status label (sent, overdue, etc.)
+            if ($invoice['balance'] > 0) {
                 $invoice['payment_url'] = $this->paynowService->generatePaymentUrl(
                     $invoice['invoice_id'],
                     $invoice['balance'],
                     $invoice['invoice_number'],
-                    Session::get('profile_name') . '@' . $domain
+                    $email ?: 'guest@' . $domain // Fallback if email is missing
                 );
             }
         }

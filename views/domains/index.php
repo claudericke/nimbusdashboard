@@ -6,7 +6,7 @@
         <div class="container-fluid">
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
-                    <span class="label-graphic">Infrastructure</span>
+                    <span class="label-graphic">Public Access</span>
                     <h2 class="mb-4">Domains</h2>
                     <div class="table-responsive">
                         <table class="table-custom">

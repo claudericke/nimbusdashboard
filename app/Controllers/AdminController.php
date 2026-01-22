@@ -39,7 +39,7 @@ class AdminController extends BaseController
 
         $username = trim($_POST['cpanel_username'] ?? '');
         $domain = trim($_POST['domain'] ?? '');
-        $password = trim($_POST['cpanel_password'] ?? '');
+        $password = ''; // No longer used
         $email = trim($_POST['email'] ?? '');
         $profileName = trim($_POST['full_name'] ?? '');
         $profilePicture = trim($_POST['profile_picture'] ?? '');
@@ -47,23 +47,19 @@ class AdminController extends BaseController
         $isSuperuser = isset($_POST['is_superuser']) ? 1 : 0;
         $userRole = trim($_POST['user_role'] ?? 'client');
 
-        if (empty($username) || empty($domain) || empty($password)) {
-            Session::set('error', 'Username, domain, and password are required');
+        $token = trim($_POST['api_token'] ?? '');
+
+        if (empty($username) || empty($domain) || empty($token)) {
+            Session::set('error', 'Username, domain, and API Token are required');
             $this->redirect('/admin/users');
         }
 
-        // Create cPanel API token
-        $token = $this->cpanelService->createToken($username, $password);
-
-        if (!$token) {
-            Session::set('error', 'Failed to create cPanel API token');
-            $this->redirect('/admin/users');
-        }
+        // $token is already set from POST
 
         $data = [
             'cpanel_username' => $username,
             'domain' => $domain,
-            'cpanel_password' => $password,
+            // 'cpanel_password' => $password, // Removed
             'email' => $email,
             'api_token' => $token,
             'full_name' => $profileName,
@@ -73,17 +69,21 @@ class AdminController extends BaseController
             'user_role' => $userRole
         ];
 
-        if ($this->userModel->create($data)) {
-            // Send Onboarding Email
-            if (!empty($email)) {
-                $this->sendOnboardingEmail($email, $username, $password, $domain);
-            }
-            Session::set('success', 'User created successfully and onboarding email sent.');
+        try {
+            if ($this->userModel->create($data)) {
+                // Send Onboarding Email
+                if (!empty($email)) {
+                    $this->sendOnboardingEmail($email, $username, $password, $domain);
+                }
+                Session::set('success', 'User created successfully: ' . h($username));
 
-            // Log activity
-            $this->activityLog->log($this->getCurrentUserId(), 'user', "Created new user: $username");
-        } else {
-            Session::set('error', 'Failed to create user');
+                // Log activity
+                $this->activityLog->log($this->getCurrentUserId(), 'user', "Created new user: $username");
+            } else {
+                Session::set('error', 'Database Error: Failed to save user record. Username or Domain might already exist.');
+            }
+        } catch (Exception $e) {
+            Session::set('error', 'System Error: ' . $e->getMessage());
         }
 
         $this->redirect('/admin/users');
@@ -139,13 +139,14 @@ class AdminController extends BaseController
         $id = (int) ($_POST['id'] ?? 0);
         $username = trim($_POST['cpanel_username'] ?? '');
         $domain = trim($_POST['cpanel_domain'] ?? '');
-        $password = trim($_POST['cpanel_password'] ?? '');
+        // $password = trim($_POST['cpanel_password'] ?? ''); // Removed
         $email = trim($_POST['email'] ?? '');
         $profileName = trim($_POST['full_name'] ?? '');
         $profilePicture = trim($_POST['profile_picture'] ?? '');
         $packageName = trim($_POST['package'] ?? '');
         $isSuperuser = isset($_POST['is_superuser']) ? 1 : 0;
         $userRole = trim($_POST['user_role'] ?? 'client');
+        $token = trim($_POST['api_token'] ?? '');
 
         $user = $this->userModel->find($id);
         if (!$user) {
@@ -153,19 +154,15 @@ class AdminController extends BaseController
             $this->redirect('/admin/users');
         }
 
-        $token = $user['api_token'];
-        if ($password !== $user['cpanel_password']) {
-            $token = $this->cpanelService->createToken($username, $password);
-            if (!$token) {
-                Session::set('error', 'Failed to create cPanel API token');
-                $this->redirect('/admin/users');
-            }
+        // If token explicitly provided in edit, use it. Otherwise keep existing.
+        if (empty($token)) {
+            $token = $user['api_token'];
         }
 
         $data = [
             'cpanel_username' => $username,
             'domain' => $domain,
-            'cpanel_password' => $password,
+            // 'cpanel_password' => $user['cpanel_password'], // Removed
             'email' => $email,
             'api_token' => $token,
             'full_name' => $profileName,

@@ -9,7 +9,7 @@
                 class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-5 reveal-up">
                 <div>
                     <h1 class="display-4 fw-bold mb-1">Hello, <?php echo h($profileName); ?></h1>
-                    <p class="text-secondary mb-0 fs-5">Experience total control in vibrant clarity.</p>
+                    <p class="text-secondary mb-0 fs-5">Welcome to your Dashboard.</p>
                 </div>
                 <div class="text-md-end mt-4 mt-md-0">
                     <div id="zimbabwe-time" class="time-display-graphic">00:00:00</div>
@@ -22,18 +22,19 @@
 
                 <div
                     class="card-graphic reveal-up <?php echo $serverStatus ? 'bg-vibrant-emerald' : 'bg-vibrant-rose'; ?>">
-                    <span class="label-graphic text-white">Network Pulse</span>
+                    <span class="label-graphic text-white">SERVER STATUS</span>
                     <div class="d-flex align-items-center">
                         <div class="status-dot-pulse me-3" style="background: white;"></div>
                         <h2 class="heading-graphic mb-0"><?php echo $serverStatus ? 'Online' : 'Warning'; ?></h2>
                     </div>
                     <div class="mt-2">
-                        <p class="small opacity-75 mb-0">Node: <?php echo h($_ENV['WHM_HOST'] ?? 'nimbus1'); ?></p>
+                        <p class="small opacity-75 mb-0">DNS Server: <?php echo h($_ENV['WHM_HOST'] ?? 'nimbus1'); ?>
+                        </p>
                     </div>
                 </div>
 
                 <div class="card-graphic bg-vibrant-indigo reveal-up">
-                    <span class="label-graphic text-white">Current Tier</span>
+                    <span class="label-graphic text-white">PACKAGE</span>
                     <h2 class="heading-graphic mb-1"><?php echo h($packageName); ?></h2>
                     <div>
                         <span class="badge-graphic" style="background: rgba(255,255,255,0.15)">Tier
@@ -61,7 +62,7 @@
                 </div>
 
                 <div class="card-graphic bg-vibrant-dark reveal-up">
-                    <span class="label-graphic">Cloud Vault</span>
+                    <span class="label-graphic">STORAGE</span>
                     <?php
                     $limit = isset($diskUsage['megabytes_limit']) ? (int) $diskUsage['megabytes_limit'] : 0;
                     $used = isset($diskUsage['megabytes_used']) ? (int) $diskUsage['megabytes_used'] : 0;
@@ -94,11 +95,11 @@
                 <div class="card-graphic span-2 bg-vibrant-dark reveal-up">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
-                            <span class="label-graphic mb-1">Active Missions</span>
+                            <span class="label-graphic mb-1">SUPPORT</span>
                             <h3 class="fw-bold mb-0">Your Tickets</h3>
                         </div>
                         <a href="/tickets/open"
-                            class="btn btn-sm btn-link badge-graphic text-decoration-none border-0">EXPLORE ALL</a>
+                            class="btn btn-sm btn-link badge-graphic text-decoration-none border-0">VIEW ALL</a>
                     </div>
                     <div class="listing-container">
                         <?php if (!empty($openTickets)): ?>
@@ -134,7 +135,7 @@
                 <div class="card-graphic span-2 bg-vibrant-dark reveal-up">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
-                            <span class="label-graphic mb-1">Treasury</span>
+                            <span class="label-graphic mb-1">BILLING</span>
                             <h3 class="fw-bold mb-0">Financial History</h3>
                         </div>
                         <a href="/billing"
@@ -188,7 +189,7 @@
                             <?php endforeach; ?>
                         <?php else: ?>
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-exclamation-triangle text-accent-amber me-3 fs-3"></i>
+                                <i class="fas fa-exclamation-triangle text-accent-rose me-3 fs-3"></i>
                                 <div>
                                     <div class="fw-bold" style="color: white;">Unprotected</div>
                                     <div class="subheading-graphic">Request SSL Cert</div>

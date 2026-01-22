@@ -14,13 +14,21 @@
                 </div>
             <?php endif; ?>
 
+            <?php if (Session::has('error')): ?>
+                <div class="alert alert-danger alert-dismissible fade show reveal-up">
+                    <?php echo h(Session::get('error'));
+                    Session::remove('error'); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
-                    <span class="label-graphic">Authority Center</span>
+                    <span class="label-graphic">USER LISTING</span>
                     <h2 class="mb-4">Internal Directory</h2>
 
                     <ul class="nav nav-tabs mb-5">
-                        <li class="nav-item"><a class="nav-link active" href="/admin/users">Personnel</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="/admin/users">Clients</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/quotes">Inspiration</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/permissions">Privileges</a></li>
                     </ul>
@@ -28,7 +36,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3 class="h4 fw-bold mb-0">Active Operatives</h3>
                         <button type="button" class="btn-complete-graphic" data-bs-toggle="modal"
-                            data-bs-target="#addUserModal">ENLIST NEW USER</button>
+                            data-bs-target="#addUserModal">ADD USER</button>
                     </div>
 
                     <div class="table-responsive">
@@ -36,10 +44,10 @@
                             <thead>
                                 <tr>
                                     <th>ID <span class="sort-icon"></span></th>
-                                    <th>Alias <span class="sort-icon"></span></th>
-                                    <th>Nexus Domain <span class="sort-icon"></span></th>
-                                    <th>Frequency <span class="sort-icon"></span></th>
-                                    <th>Tier <span class="sort-icon"></span></th>
+                                    <th>DOMAN OWNER <span class="sort-icon"></span></th>
+                                    <th>DOMAIN <span class="sort-icon"></span></th>
+                                    <th>E-MAIL <span class="sort-icon"></span></th>
+                                    <th>PACKAGE <span class="sort-icon"></span></th>
                                     <th>Privilege <span class="sort-icon"></span></th>
                                     <th>Actions</th>
                                 </tr>
@@ -74,7 +82,7 @@
                                                     data-package="<?php echo h($user['package'] ?? ''); ?>"
                                                     data-superuser="<?php echo $user['is_superuser'] ?? 0; ?>"
                                                     data-role="<?php echo h($user['user_role'] ?? 'client'); ?>"
-                                                    data-password="<?php echo h($user['cpanel_password'] ?? ''); ?>">EDIT
+                                                    data-api-token="<?php echo h($user['api_token'] ?? ''); ?>">EDIT
                                                     USER</button>
 
                                                 <form method="POST" action="/admin/users/delete">
@@ -83,7 +91,8 @@
                                                         value="<?php echo h($user['id']); ?>">
                                                     <button type="submit"
                                                         class="btn btn-sm btn-complete-graphic bg-vibrant-rose"
-                                                        onclick="return confirm('Initiate user purge?')">PURGE</button>
+                                                        onclick="return confirm('Initiate user purge?')">DELETE
+                                                        USER</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -110,39 +119,37 @@
                 <?php echo CSRF::field(); ?>
                 <div class="modal-body p-4">
                     <div class="mb-4">
-                        <label class="label-graphic">Nexus Alias</label>
+                        <label class="label-graphic">USER NAME</label>
                         <input type="text" class="form-control" name="cpanel_username" required
                             placeholder="cPanel Username">
                     </div>
                     <div class="mb-4">
-                        <label class="label-graphic">Operation Domain</label>
+                        <label class="label-graphic">DOMAIN</label>
                         <input type="text" class="form-control" name="domain" required placeholder="example.com">
                     </div>
                     <div class="mb-4">
-                        <label class="label-graphic">Frequency Address</label>
+                        <label class="label-graphic">E-MAIL ADDRESS</label>
                         <input type="email" class="form-control" name="email" required
                             placeholder="operative@domain.com">
                     </div>
                     <div class="mb-4">
-                        <label class="label-graphic">Security Credentials</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="cpanel_password" name="cpanel_password"
-                                required>
-                            <button class="btn btn-outline-secondary px-3" type="button" id="generate_cpanel_password"
-                                title="Generate Access Key"><i class="fas fa-key"></i></button>
-                            <span class="input-group-text bg-transparent border-start-0 toggle-password"
-                                data-target="#cpanel_password" style="cursor:pointer"><i
-                                    class="fas fa-eye text-secondary"></i></span>
-                        </div>
+                        <label class="label-graphic">API TOKEN</label>
+                        <input type="text" class="form-control" name="api_token" required
+                            placeholder="Enter cPanel API Token">
+                        <small class="text-secondary">A valid API token is required for dashboard connections.</small>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-4">
-                            <label class="label-graphic">FullName</label>
+                            <label class="label-graphic">DOMAIN OWNER</label>
                             <input type="text" class="form-control" name="full_name" placeholder="Agent Name">
                         </div>
                         <div class="col-md-6 mb-4">
-                            <label class="label-graphic">Service Tier</label>
-                            <input type="text" class="form-control" name="package" value="Solopreneur">
+                            <label class="label-graphic">PACKAGE</label>
+                            <select class="form-select" name="package">
+                                <option value="Solopreneur">Solopreneur</option>
+                                <option value="Small Business">Small Business</option>
+                                <option value="Enterprise">Enterprise</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-check form-switch mt-2">
@@ -154,8 +161,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold"
-                        data-bs-dismiss="modal">ABORT</button>
-                    <button type="submit" class="btn-complete-graphic">CONFIRM ENLISTMENT</button>
+                        data-bs-dismiss="modal">CANCEL</button>
+                    <button type="submit" class="btn-complete-graphic">CREATE USER</button>
                 </div>
             </form>
         </div>
@@ -175,34 +182,34 @@
                 <input type="hidden" name="id" id="edit_id">
                 <div class="modal-body p-4">
                     <div class="mb-4">
-                        <label class="label-graphic">Nexus Alias</label>
+                        <label class="label-graphic">USER NAME</label>
                         <input type="text" class="form-control" name="cpanel_username" id="edit_username" required>
                     </div>
                     <div class="mb-4">
-                        <label class="label-graphic">Operation Domain</label>
+                        <label class="label-graphic">DOMAIN</label>
                         <input type="text" class="form-control" name="cpanel_domain" id="edit_domain" required>
                     </div>
                     <div class="mb-4">
-                        <label class="label-graphic">Frequency Address</label>
+                        <label class="label-graphic">E-MAIL ADDRESS</label>
                         <input type="email" class="form-control" name="email" id="edit_email" required>
                     </div>
                     <div class="mb-4">
-                        <label class="label-graphic">Security Credentials</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="cpanel_password" id="edit_password" required>
-                            <button class="btn btn-outline-secondary px-3" type="button"
-                                onclick="generateRandomPassword('edit_password')" title="Generate Access Key"><i
-                                    class="fas fa-key"></i></button>
-                        </div>
+                        <label class="label-graphic">API TOKEN</label>
+                        <input type="text" class="form-control" name="api_token" id="edit_api_token"
+                            placeholder="Update API Token (Optional)">
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-4">
-                            <label class="label-graphic">FullName</label>
+                            <label class="label-graphic">DOMAIN OWNER</label>
                             <input type="text" class="form-control" name="full_name" id="edit_fullname">
                         </div>
                         <div class="col-md-6 mb-4">
-                            <label class="label-graphic">Service Tier</label>
-                            <input type="text" class="form-control" name="package" id="edit_package">
+                            <label class="label-graphic">PACKAGE</label>
+                            <select class="form-select" name="package" id="edit_package">
+                                <option value="Solopreneur">Solopreneur</option>
+                                <option value="Small Business">Small Business</option>
+                                <option value="Enterprise">Enterprise</option>
+                            </select>
                         </div>
                     </div>
                     <div class="row">
@@ -227,7 +234,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold"
-                        data-bs-dismiss="modal">ABORT</button>
+                        data-bs-dismiss="modal">CANCEL</button>
                     <button type="submit" class="btn-complete-graphic">UPDATE LEDGER</button>
                 </div>
             </form>
@@ -264,16 +271,21 @@
         var package = button.getAttribute('data-package');
         var isSuper = button.getAttribute('data-superuser');
         var role = button.getAttribute('data-role');
+        var apiToken = button.getAttribute('data-api-token'); // New attribute
 
         var modal = this;
         modal.querySelector('#edit_id').value = id;
         modal.querySelector('#edit_username').value = username;
         modal.querySelector('#edit_domain').value = domain;
         modal.querySelector('#edit_email').value = email;
-        modal.querySelector('#edit_password').value = password;
+        // modal.querySelector('#edit_password').value = password; // Removed
         modal.querySelector('#edit_fullname').value = fullname;
         modal.querySelector('#edit_package').value = package;
         modal.querySelector('#edit_role').value = role;
+
+        // Populate API Token if field exists (though logic might handle updates differently)
+        var tokenInput = modal.querySelector('#edit_api_token');
+        if (tokenInput) tokenInput.value = apiToken || '';
 
         if (isSuper == '1') {
             modal.querySelector('#edit_isSuper').checked = true;

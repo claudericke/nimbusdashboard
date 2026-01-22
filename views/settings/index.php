@@ -25,7 +25,7 @@
 
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
-                    <span class="label-graphic">Nexus Identity</span>
+                    <span class="label-graphic">Customer ID</span>
                     <h2 class="mb-5">Profile Configuration</h2>
 
                     <div class="row">
@@ -46,7 +46,7 @@
                                     </button>
                                 </div>
                                 <input type="file" id="avatar-input" class="d-none" accept="image/*">
-                                <p class="small text-secondary fw-bold text-uppercase ls-1">Interface ID</p>
+                                <p class="small text-secondary fw-bold text-uppercase ls-1">Profile Photo</p>
                             </div>
                         </div>
 
@@ -58,7 +58,7 @@
                                     value="<?php echo h($profilePicture ?? ''); ?>">
 
                                 <div class="mb-5">
-                                    <label class="label-graphic mb-2">Authenticated Alias</label>
+                                    <label class="label-graphic mb-2">Customer Name</label>
                                     <input type="text" name="profile_name" value="<?php echo h($profileName ?? ''); ?>"
                                         placeholder="Enter your operational name" class="form-control form-control-lg">
                                 </div>

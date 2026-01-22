@@ -1,0 +1,18 @@
+Debugging for: driftstudio.co.zw (hello@driftstudio.co.zw)
+Found 2 invoices.
+--------------------------------------------------
+Invoice: INV-000132
+Status: 'sent'
+Balance: '360' (Type: double)
+Logic Check:
+  - Status === 'unpaid': FALSE
+  - Balance > 0: TRUE
+  -> NO URL GENERATED (Conditions failed)
+--------------------------------------------------
+Invoice: INV-000081
+Status: 'overdue'
+Balance: '180' (Type: double)
+Logic Check:
+  - Status === 'unpaid': FALSE
+  - Balance > 0: TRUE
+  -> NO URL GENERATED (Conditions failed)

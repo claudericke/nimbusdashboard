@@ -37,10 +37,13 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <?php if ($invoice['balance'] > 0 && isset($invoice['payment_url'])): ?>
+
+                                                <?php if ($invoice['balance'] > 0 && !empty($invoice['payment_url'])): ?>
                                                     <a href="<?php echo h($invoice['payment_url']); ?>" target="_blank"
-                                                        class="btn btn-sm btn-complete-graphic bg-vibrant-emerald">SETTLE
-                                                        BALANCE</a>
+                                                        class="btn btn-sm btn-complete-graphic bg-vibrant-emerald">PAY
+                                                        NOW</a>
+                                                <?php elseif ($invoice['balance'] > 0): ?>
+                                                    <span class="text-secondary small">Payment Link Unavailable</span>
                                                 <?php else: ?>
                                                     <span class="text-accent-emerald fw-bold small"><i
                                                             class="fas fa-check-double me-1"></i> CLEARED</span>

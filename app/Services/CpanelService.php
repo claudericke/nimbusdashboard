@@ -16,9 +16,9 @@ class CpanelService
         $this->token = $token ?? Session::getApiToken();
     }
 
-    public function createToken($username, $password)
+    public function createToken($username, $password, $domain = null)
     {
-        $domain = Session::getDomain();
+        $domain = $domain ?? Session::getDomain();
         $url = "https://cpanel.{$domain}:{$this->port}/execute/Tokens/create_token";
         $query = http_build_query(['label' => 'DriftNimbusDashboard']);
         $ch = curl_init("{$url}?{$query}");
@@ -42,7 +42,16 @@ class CpanelService
         if ($httpCode === 200 && isset($data['status']) && intval($data['status']) === 1) {
             return $data['data'][0]['token'] ?? null;
         }
-        return null;
+
+        // Extract error details
+        $errorMessage = 'Unknown cPanel API error';
+        if (isset($data['errors']) && is_array($data['errors'])) {
+            $errorMessage = implode('; ', $data['errors']);
+        } elseif (isset($data['metadata']['reason'])) {
+            $errorMessage = $data['metadata']['reason'];
+        }
+
+        throw new Exception("cPanel Login Failed: " . $errorMessage);
     }
 
     public function uapiCall($module, $function, $params = [])

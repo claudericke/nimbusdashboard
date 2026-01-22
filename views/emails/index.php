@@ -79,10 +79,11 @@
                                                 <button type="button"
                                                     class="btn btn-sm btn-complete-graphic bg-vibrant-dark me-2"
                                                     data-bs-toggle="modal" data-bs-target="#changePasswordModal"
-                                                    data-email="<?php echo h($email['email'] ?? ''); ?>">PIN RESET</button>
+                                                    data-email="<?php echo h($email['email'] ?? ''); ?>">CHANGE
+                                                    PASSWORD</button>
                                                 <button type="button" class="btn btn-sm btn-complete-graphic bg-vibrant-rose"
                                                     data-bs-toggle="modal" data-bs-target="#deleteEmailModal"
-                                                    data-email="<?php echo h($email['email'] ?? ''); ?>">PURGE</button>
+                                                    data-email="<?php echo h($email['email'] ?? ''); ?>">DELETE</button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

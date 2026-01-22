@@ -35,12 +35,11 @@ class User
 
     public function create($data)
     {
-        $stmt = $this->db->prepare("INSERT INTO users (cpanel_username, domain, cpanel_password, api_token, full_name, email, profile_picture_url, package, is_superuser, user_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $this->db->prepare("INSERT INTO users (cpanel_username, domain, api_token, full_name, email, profile_picture_url, package, is_superuser, user_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param(
-            "ssssssssss",
+            "sssssssss",
             $data['cpanel_username'],
             $data['domain'],
-            $data['cpanel_password'],
             $data['api_token'],
             $data['full_name'],
             $data['email'],
@@ -54,12 +53,11 @@ class User
 
     public function update($id, $data)
     {
-        $stmt = $this->db->prepare("UPDATE users SET cpanel_username = ?, domain = ?, cpanel_password = ?, api_token = ?, full_name = ?, email = ?, profile_picture_url = ?, package = ?, is_superuser = ?, user_role = ? WHERE id = ?");
+        $stmt = $this->db->prepare("UPDATE users SET cpanel_username = ?, domain = ?, api_token = ?, full_name = ?, email = ?, profile_picture_url = ?, package = ?, is_superuser = ?, user_role = ? WHERE id = ?");
         $stmt->bind_param(
-            "ssssssssssi",
+            "sssssssssi",
             $data['cpanel_username'],
             $data['domain'],
-            $data['cpanel_password'],
             $data['api_token'],
             $data['full_name'],
             $data['email'],
@@ -81,10 +79,8 @@ class User
 
     public function authenticate($domain, $password)
     {
-        $user = $this->findByDomain($domain);
-        if ($user && $user['cpanel_password'] === $password) {
-            return $user;
-        }
+        // Password authentication is deprecated as column is removed.
+        // Logic should be handled via API Token verification or external auth.
         return null;
     }
 

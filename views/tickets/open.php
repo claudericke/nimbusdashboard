@@ -30,8 +30,8 @@
         <div class="container-fluid">
             <div class="bento-grid">
                 <div class="card-graphic full-width reveal-up">
-                    <span class="label-graphic">Mission Control</span>
-                    <h2 class="mb-4"><?php echo h($title ?? 'Active Operation Tickets'); ?></h2>
+                    <span class="label-graphic">TICKETS</span>
+                    <h2 class="mb-4"><?php echo h($title ?? 'Pending Support Tickets'); ?></h2>
 
                     <?php if (!empty($tickets)): ?>
                         <div class="table-responsive">

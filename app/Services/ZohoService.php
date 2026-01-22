@@ -45,7 +45,7 @@ class ZohoService
 
     public function call($endpoint, $method = 'GET', $data = null)
     {
-        $url = "https://books.zoho.com/api/v3/{$endpoint}";
+        $url = "https://www.zohoapis.com/books/v3/{$endpoint}";
         $url .= (strpos($url, '?') ? '&' : '?') . "organization_id={$this->config['organization_id']}";
 
         $ch = curl_init($url);
