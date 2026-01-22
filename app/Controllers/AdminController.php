@@ -7,6 +7,7 @@ class AdminController extends BaseController
     private $permissionModel;
     private $cpanelService;
     private $activityLog;
+    private $migrationService;
 
     public function __construct()
     {
@@ -15,6 +16,7 @@ class AdminController extends BaseController
         $this->permissionModel = new Permission();
         $this->cpanelService = new CpanelService();
         $this->activityLog = new ActivityLog();
+        $this->migrationService = new MigrationService();
     }
 
     public function users()
@@ -328,5 +330,39 @@ class AdminController extends BaseController
 
         Session::set('success', 'Permissions updated successfully');
         $this->redirect('/admin/permissions');
+    }
+
+    public function migrations()
+    {
+        $this->requireSuperuser();
+
+        $migrations = $this->migrationService->getMigrations();
+
+        $this->view('admin/migrations', ['migrations' => $migrations]);
+    }
+
+    public function runMigration()
+    {
+        $this->requireSuperuser();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/migrations');
+        }
+
+        CSRF::check();
+
+        $filename = $_POST['filename'] ?? '';
+
+        $result = $this->migrationService->runMigration($filename);
+
+        if ($result['success']) {
+            Session::set('success', $result['message']);
+            // Log activity
+            $this->activityLog->log($this->getCurrentUserId(), 'system', "Ran migration: $filename");
+        } else {
+            Session::set('error', $result['message']);
+        }
+
+        $this->redirect('/admin/migrations');
     }
 }

@@ -53,3 +53,5 @@ $router->post('/admin/quotes/delete', 'AdminController@deleteQuote');
 
 $router->get('/admin/permissions', 'AdminController@permissions');
 $router->post('/admin/permissions/update', 'AdminController@updatePermissions');
+$router->get('/admin/migrations', 'AdminController@migrations');
+$router->post('/admin/migrations/run', 'AdminController@runMigration');

@@ -249,7 +249,8 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
             <img src="https://hosting.driftnimbus.com/wp-content/uploads/2025/02/nimbus-logo-horizontal-white.svg"
                 alt="Drift Nimbus" style="width:100%;max-width:150px">
         </a>
-        <a href="#" class="text-secondary position-relative me-1" data-bs-toggle="modal" data-bs-target="#activityModal">
+        <a href="#" class="text-secondary position-relative me-1" data-bs-toggle="modal"
+            data-bs-target="#activityModal">
             <i class="fas fa-bell" style="font-size:1.1rem; color: var(--text-secondary); transition: color 0.2s;"
                 onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-secondary)'"></i>
             <span class="position-absolute top-0 start-100 translate-middle p-1 border border-dark rounded-circle"
@@ -354,6 +355,7 @@ $profilePicture = Session::get('profile_picture', 'https://placehold.co/40x40/64
                     <li><a href="/admin/users" class="sidebar-submenu-link">Manage Users</a></li>
                     <li><a href="/admin/quotes" class="sidebar-submenu-link">Manage Quotes</a></li>
                     <li><a href="/admin/permissions" class="sidebar-submenu-link">Manage Permissions</a></li>
+                    <li><a href="/admin/migrations" class="sidebar-submenu-link">Database Migrations</a></li>
                 </ul>
             </li>
         <?php endif; ?>
