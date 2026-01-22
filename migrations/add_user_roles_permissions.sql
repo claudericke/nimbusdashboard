@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS permissions (
 );
 
 -- Insert default roles
-INSERT INTO roles (role_name, role_label) VALUES
+INSERT IGNORE INTO roles (role_name, role_label) VALUES
 ('superuser', 'Super User'),
 ('admin', 'Administrator'),
 ('client', 'Client'),
 ('viewer', 'Viewer');
 
 -- Insert default permissions for superuser (all access)
-INSERT INTO permissions (role_name, menu_item, can_access) VALUES
+INSERT IGNORE INTO permissions (role_name, menu_item, can_access) VALUES
 ('superuser', 'dashboard', 1),
 ('superuser', 'domains', 1),
 ('superuser', 'emails', 1),
@@ -38,7 +38,7 @@ INSERT INTO permissions (role_name, menu_item, can_access) VALUES
 ('superuser', 'admin', 1);
 
 -- Insert default permissions for admin
-INSERT INTO permissions (role_name, menu_item, can_access) VALUES
+INSERT IGNORE INTO permissions (role_name, menu_item, can_access) VALUES
 ('admin', 'dashboard', 1),
 ('admin', 'domains', 1),
 ('admin', 'emails', 1),
@@ -49,7 +49,7 @@ INSERT INTO permissions (role_name, menu_item, can_access) VALUES
 ('admin', 'admin', 0);
 
 -- Insert default permissions for client
-INSERT INTO permissions (role_name, menu_item, can_access) VALUES
+INSERT IGNORE INTO permissions (role_name, menu_item, can_access) VALUES
 ('client', 'dashboard', 1),
 ('client', 'domains', 1),
 ('client', 'emails', 1),
@@ -60,7 +60,7 @@ INSERT INTO permissions (role_name, menu_item, can_access) VALUES
 ('client', 'admin', 0);
 
 -- Insert default permissions for viewer (read-only)
-INSERT INTO permissions (role_name, menu_item, can_access) VALUES
+INSERT IGNORE INTO permissions (role_name, menu_item, can_access) VALUES
 ('viewer', 'dashboard', 1),
 ('viewer', 'domains', 1),
 ('viewer', 'emails', 0),
