@@ -71,10 +71,19 @@ class AdminController extends BaseController
 
         if ($this->userModel->create($data)) {
             // Send Onboarding Email
+            $emailSent = false;
             if (!empty($email)) {
-                $this->sendOnboardingEmail($email, $username, $password, $domain);
+                $emailSent = $this->sendOnboardingEmail($email, $username, $password, $domain);
             }
-            Session::set('success', 'User created successfully and onboarding email sent.');
+
+            if ($emailSent) {
+                Session::set('success', 'User created successfully and onboarding email sent.');
+            } else if (!empty($email)) {
+                Session::set('success', 'User created successfully, but welcome email failed to send. Check SMTP config.');
+            } else {
+                Session::set('success', 'User created successfully.');
+            }
+
             addNotification('success', "New user account created for node: {$domain}");
         } else {
             Session::set('error', 'Failed to create user');
@@ -115,7 +124,7 @@ class AdminController extends BaseController
             $mail->send();
             return true;
         } catch (Exception $e) {
-            // Log error or set session error
+            error_log("Failed to send onboarding email to {$to}: " . $mail->ErrorInfo);
             return false;
         }
     }
